@@ -1,4 +1,4 @@
-from . import Point, Quaternion, Coord, Points, Quaternions
+from geometry import Point, Quaternion, Coord, Points, Quaternions
 
 import numpy as np
 from typing import Union

@@ -24,9 +24,6 @@ class Quaternion():
         """This can be deprecated, instead use list()"""
         return [self.w, self.x, self.y, self.z]
 
-    def __dict__(self):
-        return {'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z}
-
     def to_dict(self, prefix=''):
         return {'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z}
 
