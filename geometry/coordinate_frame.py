@@ -35,19 +35,12 @@ class Coord(object):
     def __str__(self):
         return "origin:{0}\nx_axis:{1}\ny_axis:{1}\nz_axis:{2}".format(str(self.origin), str(self.x_axis), str(self.y_axis), str(self.z_axis))
 
-    def __dict__(self):
-        return dict(
-            origin=dict(self.origin),
-            x_axis=dict(self.x_axis),
-            y_axis=dict(self.y_axis),
-            z_axis=dict(self.z_axis)
-        )
     def to_dict(self):
         return dict(
-            origin=dict(self.origin),
-            x_axis=dict(self.x_axis),
-            y_axis=dict(self.y_axis),
-            z_axis=dict(self.z_axis)
+            origin=self.origin.to_dict(),
+            x_axis=self.x_axis.to_dict(),
+            y_axis=self.y_axis.to_dict(),
+            z_axis=self.z_axis.to_dict()
         )
     @property
     def axes(self):

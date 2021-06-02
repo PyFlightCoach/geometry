@@ -34,9 +34,6 @@ class Point(object):
         """can be deprecated, instead use tuple()"""
         return(self.x, self.y, self.z)
 
-    def __dict__(self):
-        return {'x': self.x, 'y': self.y, 'z': self.z}
-
     def to_dict(self, prefix=''):
         return {'x': self.x, 'y': self.y, 'z': self.z}
 
