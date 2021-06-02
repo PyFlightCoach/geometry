@@ -20,16 +20,25 @@ class TestQuaternion(unittest.TestCase):
 
         res = np.apply_along_axis(test_func,axis=1, arr=parr)
 
-        # scipy this seems to be producing data with qx and qz swapped, or something else is wrong here!
-        spy = R.from_euler('ZYX', parr).as_quat() 
+        # 'xyz' specifies xyz-fixed Euler angles, as used in ArduPilot
+        spy = R.from_euler('xyz', parr).as_quat()
         spout = spy.copy()
-        spout[:,0] = spy[:,2]
-        spout[:,2] = spy[:,0]
-        
+
         np.testing.assert_array_almost_equal(
             res,
             spout
         )
+
+    def test_to_euler(self):
+        qarr = np.random.random((500, 4))
+        for i in range(0,len(qarr)):
+            q = Quaternion(*qarr[i,:]).norm()
+            sR = R.from_quat(q.xyzw)
+            np.testing.assert_array_almost_equal(
+                np.array(tuple(q.to_euler())),
+                sR.as_euler("xyz")
+            )
+            
 
     def test_from_rotation_matrix(self):
 

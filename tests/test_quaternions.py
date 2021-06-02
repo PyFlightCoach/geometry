@@ -94,10 +94,8 @@ class TestQuaternions(unittest.TestCase):
 
     def test_from_euler(self):
         
-        spy = R.from_euler('ZYX', tps.data).as_quat()
+        spy = R.from_euler('xyz', tps.data).as_quat()
         spout = spy.copy()
-        spout[:, 0] = spy[:, 2]
-        spout[:, 2] = spy[:, 0]
         np.testing.assert_array_almost_equal(
             Quaternions.from_euler(tps).xyzw,
             spout
@@ -109,7 +107,7 @@ class TestQuaternions(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             qs.to_euler().data,
-            R.from_quat(qs.xyzw).as_euler("ZYX")
+            R.from_quat(qs.xyzw).as_euler("xyz")
         )
 
     def test_to_from_euler(self):
