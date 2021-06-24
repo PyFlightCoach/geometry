@@ -185,3 +185,17 @@ class TestPoints(unittest.TestCase):
             vels.data, 
             np.tile([step0 / dt, 2 * step0 / dt, -1 * step0 / dt], (100, 1))
         )
+
+    def test_getitem(self):
+        np.testing.assert_array_equal(
+            self.pnts[0].to_list(),
+            [1, 0, 0]
+        )
+
+    def test_iter(self):
+        for point in self.pnts:
+            self.assertIsInstance(point, Point)
+
+
+if __name__ == "__main__":
+    unittest.main()

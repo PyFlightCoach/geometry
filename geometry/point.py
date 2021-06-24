@@ -42,7 +42,7 @@ class Point(object):
         return Point(value['x'], value['y'], value['z'])
 
     def __str__(self):
-        return "X:{x:.2f}\nY:{y:.2f}\nZ:{z:.2f}".format(x=self.x, y=self.y, z=self.z)
+        return "X:{x:.2f},Y:{y:.2f},Z:{z:.2f}".format(x=self.x, y=self.y, z=self.z)
 
     def __abs__(self):
         return sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)

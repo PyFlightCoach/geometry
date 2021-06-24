@@ -16,3 +16,4 @@ from .coordinate_frame import Coord
 from .quaternion import Quaternion
 from .quaternions import Quaternions
 from .transformation import Transformation
+from .line import Line
