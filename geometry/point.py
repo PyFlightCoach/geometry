@@ -178,6 +178,21 @@ class Point(object):
             [-1 * s.y, c.y * s.x, c.x * c.y]
         ]
 
+    @staticmethod
+    def X(mag: float = 1.0):
+        return Point(mag, 0.0, 0.0)
+        
+    @staticmethod
+    def Y(mag: float = 1.0):
+        return Point(0.0, mag, 0.0)
+
+    @staticmethod
+    def Z(mag: float = 1.0):
+        return Point(0.0, 0.0, mag)
+
+    @staticmethod
+    def XYZ(mag: float = 0.0):
+        return Point(mag, mag, mag)
 
 def dot_product(p1: Point, p2: Point):
     return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z
