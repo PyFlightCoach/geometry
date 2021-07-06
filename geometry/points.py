@@ -33,9 +33,13 @@ class Points(object):
     def z(self):
         return self.data[:,2]
 
+
     @property
     def count(self):
         return self.data.shape[0]  
+
+    def __getitem__(self, index):
+        return Point(*list(self.data[index, :]))
 
     def __abs__(self):
         return np.sqrt(self.x**2 + self.y**2 + self.z**2)
@@ -151,3 +155,5 @@ class Points(object):
         data[abs(ab - mean) > nstds * std, :] = [np.nan, np.nan, np.nan]
 
         return Points(pd.DataFrame(data).fillna(method="ffill").to_numpy())
+
+    

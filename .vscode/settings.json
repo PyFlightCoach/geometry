@@ -9,5 +9,5 @@
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,
-    "python.pythonPath": "/home/tom/miniconda3/envs/pyflightcoach/bin/python"
+    "python.pythonPath": "/home/tom/miniconda3/envs/geom/bin/python"
 }
