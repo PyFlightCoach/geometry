@@ -31,14 +31,14 @@ class GPSPosition(object):
         return dict(latitude=self.latitude, longitude=self.longitude)
 
     def __str__(self):
-        return 'lat: ' + str(self._latitude) + ', long: ' + str(self._longitude)
+        return 'lat: ' + str(self.latitude) + ', long: ' + str(self.longitude)
 
     def _longitude_scale(self):
         return max(math.cos(math.radians(self.latitude)), 0.01)
 
     def _to_xy(self):
-        lat = self._latitude * math.pi / 180
-        lon = self._longitude * math.pi / 180
+        lat = self.latitude * math.pi / 180
+        lon = self.longitude * math.pi / 180
 
         return [
             GPSPosition.approx_earth_radius * math.cos(lat) * math.cos(lon),
