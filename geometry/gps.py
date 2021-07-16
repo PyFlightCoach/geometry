@@ -23,6 +23,7 @@ class GPSPosition(object):
     def __init__(self, latitude: float, longitude: float):
         self.latitude = latitude
         self.longitude = longitude
+        self._longitude_scale = max(math.cos(math.radians(self.latitude)), 0.01)
 
     def to_tuple(self):
         return (self.latitude, self.longitude)
@@ -32,9 +33,6 @@ class GPSPosition(object):
 
     def __str__(self):
         return 'lat: ' + str(self.latitude) + ', long: ' + str(self.longitude)
-
-    def _longitude_scale(self):
-        return max(math.cos(math.radians(self.latitude)), 0.01)
 
     def _to_xy(self):
         lat = self.latitude * math.pi / 180
@@ -50,7 +48,7 @@ class GPSPosition(object):
             (other.latitude - self.latitude) *
             GPSPosition.LOCATION_SCALING_FACTOR,
             -(other.longitude - self.longitude) *
-            GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale(),
+            GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
             0
         )
         
