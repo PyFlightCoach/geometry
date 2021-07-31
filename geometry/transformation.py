@@ -5,7 +5,7 @@ from typing import Union
 
 
 class Transformation():
-    def __init__(self, translation: Point, rotation: Quaternion):
+    def __init__(self, translation: Point=Point(0.0,0.0,0.0), rotation: Quaternion=Quaternion(1.0,0.0,0.0,0.0)):
         self.translation = translation
         self.rotation = rotation
 
