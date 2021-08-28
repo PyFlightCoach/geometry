@@ -14,6 +14,9 @@ from geometry.point import Point
 import unittest
 from typing import List
 
+def safecos(angledeg):
+    return max(math.cos(math.radians(angledeg)), 0.01)
+
 
 class GPSPosition(object):
     # was 6378137, extra precision removed to match ardupilot
@@ -23,7 +26,13 @@ class GPSPosition(object):
     def __init__(self, latitude: float, longitude: float):
         self.latitude = latitude
         self.longitude = longitude
-        self._longitude_scale = max(math.cos(math.radians(self.latitude)), 0.01)
+        self._longitude_scale = safecos(self.latitude)
+
+    def __getattr__(self, name):
+        if name in ["lat", "la"]:
+            return self.latitude
+        if name in ["long", "lon", "lo"]:
+            return self.longitude
 
     def to_tuple(self):
         return (self.latitude, self.longitude)
@@ -33,6 +42,15 @@ class GPSPosition(object):
 
     def __str__(self):
         return 'lat: ' + str(self.latitude) + ', long: ' + str(self.longitude)
+
+
+    def offset(self, pin: Point):
+        latb = self.latitude - pin.x / self.LOCATION_SCALING_FACTOR
+
+        return GPSPosition(
+            latb,
+            self.longitude + pin.y / (self.LOCATION_SCALING_FACTOR * safecos(latb))
+        )
 
     def _to_xy(self):
         lat = self.latitude * math.pi / 180
@@ -44,6 +62,14 @@ class GPSPosition(object):
         ]
 
     def __sub__(self, other) -> Point:
+        """Gives the ned vector from other to self
+
+        Args:
+            other (GPSPostion): [description]
+
+        Returns:
+            Point: vector from other to self
+        """
         return Point(
             (other.latitude - self.latitude) *
             GPSPosition.LOCATION_SCALING_FACTOR,
@@ -51,7 +77,10 @@ class GPSPosition(object):
             GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
             0
         )
-        
+
+    def __eq__(self, other) -> bool:
+        return self.lat == other.lat and self.long == other.long
+
 
 
 '''
