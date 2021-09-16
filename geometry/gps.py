@@ -11,12 +11,17 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import math
 from geometry.point import Point
-import unittest
-from typing import List
+from geometry.points import Points
+from typing import List, Union
+import numpy as np
+import pandas as pd
 
-def safecos(angledeg):
-    return max(math.cos(math.radians(angledeg)), 0.01)
-
+def safecos(angledeg: Union[float, np.ndarray]):
+    if isinstance(angledeg, float):
+        return max(np.cos(np.radians(angledeg)), 0.01)
+    elif isinstance(angledeg, np.ndarray):
+        return np.maximum(np.cos(np.radians(angledeg)), np.full(len(angledeg), 0.01))
+    
 
 class GPSPosition(object):
     # was 6378137, extra precision removed to match ardupilot
@@ -34,6 +39,9 @@ class GPSPosition(object):
         if name in ["long", "lon", "lo"]:
             return self.longitude
 
+    def to_list(self):
+        return [self.latitude, self.longitude]
+
     def to_tuple(self):
         return (self.latitude, self.longitude)
 
@@ -43,8 +51,7 @@ class GPSPosition(object):
     def __str__(self):
         return 'lat: ' + str(self.latitude) + ', long: ' + str(self.longitude)
 
-
-    def offset(self, pin: Point):
+    def offset(self, pin: Union[Point, Points]):
         latb = self.latitude - pin.x / self.LOCATION_SCALING_FACTOR
 
         return GPSPosition(
@@ -80,6 +87,7 @@ class GPSPosition(object):
 
     def __eq__(self, other) -> bool:
         return self.lat == other.lat and self.long == other.long
+
 
 
 

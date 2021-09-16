@@ -75,6 +75,10 @@ class Points(object):
 
     @staticmethod
     def from_point(point, count):
+        return Points.full(point,count)
+
+    @staticmethod
+    def full(point: Point, count: int):
         return Points(np.tile(list(point), (count, 1)))
 
     def __mul__(self, other):
