@@ -33,8 +33,8 @@ class TestGPSPosition(unittest.TestCase):
 
 class TestGPSPositions(unittest.TestCase):
     def test_diff(self):
-        p0 = GPSPosition( 50.206, 4.1941755999999994)
-        p0n = GPSPosition( 50.201, 4.1941755999999994)
+        p0 = GPSPosition( 50.2066727, 4.1941755999999994)
+        p0n = GPSPosition(50.206507599999995,4.194035600484306)
 
         p0s = GPSPositions.full(p0, 10)
         p0ns = GPSPositions.full(p0n, 10)
@@ -56,4 +56,8 @@ class TestGPSPositions(unittest.TestCase):
         c2s = ps.offset(diffs)
 
         np.testing.assert_array_equal(c2.to_list(), c2s[0].to_list())
- 
+    
+    def test_longitude_scale(self):
+        p = GPSPosition( 50.206507599999995,4.194035600484306)
+        ps = GPSPositions.full(p, 10)
+        self.assertEqual(p._longitude_scale, ps[0]._longitude_scale)

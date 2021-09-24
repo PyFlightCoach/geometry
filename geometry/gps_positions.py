@@ -11,7 +11,7 @@ from typing import Union
 class GPSPositions(object):
     def __init__(self, data: np.array):
         self.data = data
-        self._longitude_scale = safecos(self.longitude)
+        self._longitude_scale = safecos(self.latitude)
 
     @property
     def latitude(self):
@@ -47,15 +47,15 @@ class GPSPositions(object):
 
     def __sub__(self, other) -> Points:
         if isinstance(other, GPSPosition):
-            other = GPSPositions.full(other, self.count)
-        assert self.count == other.count
-        return Points(np.column_stack(
-            [(other.latitude - self.latitude) *
-             GPSPosition.LOCATION_SCALING_FACTOR,
-             -(other.longitude - self.longitude) *
-             GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
-             np.zeros(self.count)]
-        ))
+            others = GPSPositions.full(other, self.count)
+        else:
+            others = other
+        assert self.count == others.count
+        return Points(np.column_stack([
+            (others.latitude - self.latitude) * GPSPosition.LOCATION_SCALING_FACTOR,
+             -(others.longitude - self.longitude) * GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
+             np.zeros(self.count)
+        ]))
 
     def offset(self, pin: Union[Point, Points]):
         if isinstance(pin, Point):
