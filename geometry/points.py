@@ -160,4 +160,5 @@ class Points(object):
 
         return Points(pd.DataFrame(data).fillna(method="ffill").to_numpy())
 
-    
+    def mean(self):
+        return Point(self.x.mean(), self.y.mean(), self.z.mean())
