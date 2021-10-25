@@ -52,15 +52,18 @@ class Coord(object):
 
     @staticmethod
     def from_xy(origin: Point, x_axis: Point, y_axis: Point):
-        return Coord(origin, x_axis, y_axis, cross_product(x_axis, y_axis))
+        z_axis = cross_product(x_axis, y_axis)
+        return Coord(origin, x_axis, cross_product(z_axis, x_axis), z_axis)
 
     @staticmethod
     def from_yz(origin: Point, y_axis: Point, z_axis: Point):
-        return Coord(origin, cross_product(y_axis, z_axis), y_axis, z_axis)
+        x_axis = cross_product(y_axis, z_axis)
+        return Coord(origin, x_axis, y_axis, cross_product(x_axis, y_axis))
 
     @staticmethod
     def from_zx(origin: Point, z_axis: Point, x_axis: Point):
-        return Coord(origin, x_axis, cross_product(z_axis, x_axis), z_axis)
+        y_axis = cross_product(z_axis, x_axis)
+        return Coord(origin, cross_product(y_axis, z_axis), y_axis, z_axis)
 
     def euler_rotation(self, angles: Point = Point(0, 0, 0)):
         return self.rotate(angles.to_rotation_matrix())

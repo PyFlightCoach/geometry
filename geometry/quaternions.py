@@ -32,6 +32,9 @@ class Quaternions():
     def xyzw(self):
         return np.array([self.x, self.y, self.z, self.w]).T
 
+    def __getitem__(self, index):
+        return Quaternion(*list(self.data[index, :]))
+
     @staticmethod
     def from_pandas(df):
         return Quaternions(np.array(df))
