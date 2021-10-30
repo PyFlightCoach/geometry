@@ -220,12 +220,12 @@ class Quaternions():
     @staticmethod
     def axis_rates(q, qdot):
         wdash = qdot * q.conjugate()
-        return wdash.norm().to_axis_angle() * 2
+        return wdash.norm().to_axis_angle() 
 
     @staticmethod
     def body_axis_rates(q, qdot):
         wdash = q.conjugate() * qdot
-        return wdash.norm().to_axis_angle() * 2
+        return wdash.norm().to_axis_angle() 
 
     def rotate(self, rate: Points):
         return (Quaternions.from_axis_angle(rate) * self).norm()
@@ -234,15 +234,21 @@ class Quaternions():
         return (self * Quaternions.from_axis_angle(rate)).norm()
 
     def diff(self, dt: np.array) -> Points:
-        newqs = Quaternions.axis_rates(
-            self,
-            Quaternions(np.vstack([self.data[1:, :], self.data[-1, :]]))
-        ) / dt
-        return newqs#.remove_outliers(2)  # Bodge to get rid of phase jump
+        """differentiate in the world frame"""
+        dt = dt * len(dt) / (len(dt) - 1)
+
+        ps = Quaternions.axis_rates(
+            Quaternions(self.data[:-1, :]),
+            Quaternions(self.data[1:, :])
+        ) / dt[:-1]
+        return Points(np.vstack([ps.data, ps.data[-1,:]]))#.remove_outliers(2)  # Bodge to get rid of phase jump
 
     def body_diff(self, dt: np.array) -> Points:
-        newqs = Quaternions.body_axis_rates(
-            self,
-            Quaternions(np.vstack([self.data[1:, :], self.data[-1, :]]))
-        ) / dt
-        return newqs#.remove_outliers(2)  # Bodge to get rid of phase jump
+        """differentiate in the body frame"""
+        dt = dt * len(dt) / (len(dt) - 1)
+
+        ps = Quaternions.body_axis_rates(
+            Quaternions(self.data[:-1, :]),
+            Quaternions(self.data[1:, :])
+        ) / dt[:-1]
+        return Points(np.vstack([ps.data, ps.data[-1,:]]))#.remove_outliers(2)  # Bodge to get rid of phase jump

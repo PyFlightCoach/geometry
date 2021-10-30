@@ -194,6 +194,10 @@ class Point(object):
     def XYZ(mag: float = 0.0):
         return Point(mag, mag, mag)
 
+    @staticmethod
+    def zeros():
+        return Point(0.0,0.0,0.0)
+
 def dot_product(p1: Point, p2: Point):
     return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z
 

@@ -162,3 +162,14 @@ class Points(object):
 
     def mean(self):
         return Point(self.x.mean(), self.y.mean(), self.z.mean())
+
+
+    @staticmethod
+    def X(value):
+        return Points(np.array([value, np.zeros(value.shape), np.zeros(value.shape)]).T)
+    @staticmethod
+    def Y(value):
+        return Points(np.array([np.zeros(value.shape), value, np.zeros(value.shape)]).T)
+    @staticmethod
+    def Z(value):
+        return Points(np.array([np.zeros(value.shape), np.zeros(value.shape), value]).T)

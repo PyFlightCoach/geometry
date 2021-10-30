@@ -196,6 +196,11 @@ class TestPoints(unittest.TestCase):
         for point in self.pnts:
             self.assertIsInstance(point, Point)
 
+    def test_mean(self):
+        mean = self.pnts.mean()
+
+        self.assertEqual(mean.x, np.mean(self.pnts.x))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -22,7 +22,7 @@ class TestTransformation(unittest.TestCase):
         qs = Quaternions.from_euler(ps)
         np.testing.assert_array_almost_equal(
             qs.data,
-            trans_from.quat(trans_to.quat(qs)).data
+            -trans_from.quat(trans_to.quat(qs)).data
         )
 
 

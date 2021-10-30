@@ -158,3 +158,14 @@ class TestQuaternions(unittest.TestCase):
                 lambda *args: tuple(Quaternion(*args).to_axis_angle())
             )(*qs.data.T)).T
         )
+
+
+    def test_body_diff(self):
+        qs = Quaternions.from_quaternion(Quaternion.from_euler(Point.zeros()), 100)
+        qs = qs.body_rotate(Points.X(np.linspace(0,np.pi, 100)))
+        dt = np.ones(100)
+        dq = qs.body_diff(dt)
+        np.testing.assert_array_almost_equal(
+            dq.data,
+            Points.X(np.full(100, np.pi/100)).data
+        )

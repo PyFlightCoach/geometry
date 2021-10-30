@@ -10,9 +10,4 @@ class TestCoord(unittest.TestCase):
             np.identity(3)
         )
 
-    def test_inverse_rotation_matrix(self):
-        coord = Coord.from_nothing().rotate(np.random.random((3,3)))
-        np.testing.assert_array_equal(
-            coord.inverse_rotation_matrix,
-            np.linalg.inv(coord.rotation_matrix)
-        )
+ 
