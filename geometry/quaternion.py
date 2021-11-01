@@ -1,7 +1,7 @@
 
 from . import Point, dot_product, cross_product, Points
 from math import atan2, asin, copysign, pi, sqrt
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 import numpy as np
 
 
@@ -78,7 +78,9 @@ class Quaternion():
             return NotImplemented
 
     @staticmethod
-    def from_euler(eul: Point):
+    def from_euler(eul: Union[Point, Tuple[float, float, float]]):
+        if isinstance(eul, tuple):
+            eul = Point(*eul)
         # xyz-fixed Euler angle convention: matches ArduPilot AP_Math/Quaternion::from_euler
         half = eul * 0.5
         c = half.cosines
