@@ -39,8 +39,12 @@ class Quaternions():
     def from_pandas(df):
         return Quaternions(np.array(df))
 
-    def to_pandas(self, prefix='', suffix='', columns=['w', 'x', 'y', 'z']):
-        return pd.DataFrame(self.data, columns=[prefix + col + suffix for col in columns])
+    def to_pandas(self, prefix='', suffix='', columns=['w', 'x', 'y', 'z'], index=None):
+        return pd.DataFrame(
+            self.data, 
+            columns=[prefix + col + suffix for col in columns],
+            index=index
+        )
 
     def __abs__(self):
         return np.sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)

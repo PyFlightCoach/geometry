@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 from numbers import Number
-
+from scipy.cluster.vq import whiten
 
 class Points(object):
     __array_priority__ = 15.0
@@ -18,8 +18,12 @@ class Points(object):
     def from_pandas(df):
         return Points(np.array(df))
 
-    def to_pandas(self, prefix='', suffix='', columns=['x', 'y', 'z']):
-        return pd.DataFrame(self.data, columns=[prefix + col + suffix for col in columns])
+    def to_pandas(self, prefix='', suffix='', columns=['x', 'y', 'z'], index=None):
+        return pd.DataFrame(
+            self.data, 
+            columns=[prefix + col + suffix for col in columns],
+            index=index
+        )
 
     @property
     def x(self):
@@ -43,6 +47,9 @@ class Points(object):
 
     def __abs__(self):
         return np.sqrt(self.x**2 + self.y**2 + self.z**2)
+
+    def abs(self):
+        return Points(abs(self.data))
 
     def __add__(self, other):
         if isinstance(other, Points):
@@ -163,6 +170,20 @@ class Points(object):
     def mean(self):
         return Point(self.x.mean(), self.y.mean(), self.z.mean())
 
+    def max(self):
+        return Point(self.x.max(), self.y.max(), self.z.max())
+
+    def min(self):
+        return Point(self.x.min(), self.y.min(), self.z.min())
+
+    def norm(self, mode="elements"):
+        if mode == "elements":
+            return self / abs(self).max()
+        elif mode == "full":
+            return self / max(list(abs(self).max()))
+
+    def whiten(self):
+        return Points(whiten(self.data))
 
     @staticmethod
     def X(value):
