@@ -35,7 +35,7 @@ class Point(object):
         return(self.x, self.y, self.z)
 
     def to_dict(self, prefix=''):
-        return {'x': self.x, 'y': self.y, 'z': self.z}
+        return {prefix+'x': self.x, prefix+'y': self.y, prefix+'z': self.z}
 
     @staticmethod
     def from_dict(value: Dict):

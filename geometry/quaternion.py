@@ -17,15 +17,13 @@ class Quaternion():
             yield i
 
     def to_tuple(self):
-        """This can be deprecated, instead use tuple()"""
         return(self.w, self.x, self.y, self.z)
 
     def to_list(self):
-        """This can be deprecated, instead use list()"""
         return [self.w, self.x, self.y, self.z]
 
     def to_dict(self, prefix=''):
-        return {'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z}
+        return {prefix+'w': self.w, prefix+'x': self.x, prefix+'y': self.y, prefix+'z': self.z}
 
     def __abs__(self):
         return sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
