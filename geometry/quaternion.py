@@ -28,6 +28,10 @@ class Quaternion():
     def __abs__(self):
         return sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
 
+    @staticmethod
+    def zero():
+        return Quaternion(1.0, 0.0, 0.0, 0.0)
+
     @property
     def xyzw(self):
         return [self.x, self.y, self.z, self.w]
