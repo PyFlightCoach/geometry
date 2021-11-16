@@ -38,7 +38,8 @@ class Point(object):
         return {prefix+'x': self.x, prefix+'y': self.y, prefix+'z': self.z}
 
     @staticmethod
-    def from_dict(value: Dict):
+    def from_dict(value: dict):
+        value = {key[-1]: value for key, value in value.items()}
         return Point(value['x'], value['y'], value['z'])
 
     def __str__(self):

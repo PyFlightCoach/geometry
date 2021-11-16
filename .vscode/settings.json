@@ -6,9 +6,9 @@
         "-p",
         "test_*.py"
     ],
-    "python.testing.pytestEnabled": false,
+    "python.testing.pytestEnabled": true,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true,
+    "python.testing.unittestEnabled": false,
     "python.pythonPath": "/home/tom/miniconda3/envs/geom/bin/python",
     "python.testing.pytestArgs": [
         "tests"

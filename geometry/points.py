@@ -5,7 +5,9 @@ import pandas as pd
 from numbers import Number
 from scipy.cluster.vq import whiten
 
+
 class Points(object):
+    names=['x', 'y', 'z']
     __array_priority__ = 15.0
     def __init__(self, data: np.array):
         """
@@ -25,18 +27,8 @@ class Points(object):
             index=index
         )
 
-    @property
-    def x(self):
-        return self.data[:,0]
-
-    @property
-    def y(self):
-        return self.data[:,1]
-
-    @property
-    def z(self):
-        return self.data[:,2]
-
+    def __getattr__(self, name):
+        return self.data[:, Points.names.index(name)]
 
     @property
     def count(self):
