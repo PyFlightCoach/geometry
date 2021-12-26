@@ -178,6 +178,12 @@ class Points(object):
         return Points(whiten(self.data))
 
     @staticmethod
+    def angle(p1, p2):
+        sins = p1.cross(p2) / (abs(p1) * abs(p2)) 
+        return abs(Points(np.arcsin(sins.data)))
+
+
+    @staticmethod
     def X(value):
         return Points(np.array([value, np.zeros(value.shape), np.zeros(value.shape)]).T)
     @staticmethod
