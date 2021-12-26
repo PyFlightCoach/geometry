@@ -14,6 +14,7 @@ class Points(object):
         Args:
             data (np.array): npoint * 3 array of point locations
         """
+        assert data.shape[1] == 3
         self.data = data
 
     @staticmethod

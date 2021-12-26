@@ -11,6 +11,7 @@ class Quaternions():
     def __init__(self, data):
         """Args: data (np.array): npoint * 4 array of point locations"""
         self.data = data
+        assert data.shape[1] == 4
 
     @property
     def w(self):

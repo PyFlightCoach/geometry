@@ -12,6 +12,7 @@ class GPSPositions(object):
     def __init__(self, data: np.array):
         self.data = data
         self._longitude_scale = safecos(self.latitude)
+        assert data.shape[1] == 2
 
     @property
     def latitude(self):
