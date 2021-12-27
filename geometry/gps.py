@@ -16,8 +16,8 @@ from typing import List, Union
 import numpy as np
 import pandas as pd
 
-def safecos(angledeg: Union[float, np.ndarray]):
-    if isinstance(angledeg, float):
+def safecos(angledeg: Union[float, int, np.ndarray]):
+    if isinstance(angledeg, float) or isinstance(angledeg, int):
         return max(np.cos(np.radians(angledeg)), 0.01)
     elif isinstance(angledeg, np.ndarray):
         return np.maximum(np.cos(np.radians(angledeg)), np.full(len(angledeg), 0.01))
