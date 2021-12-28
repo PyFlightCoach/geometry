@@ -135,10 +135,10 @@ class Points(object):
         return Points(np.cos(self.data))
 
     def acosines(self):
-        return Points(np.acos(self.data))
+        return Points(np.arccos(self.data))
 
     def asines(self):
-        return Points(np.asin(self.data))
+        return Points(np.arcsin(self.data))
 
     def dot(self, other):
         return np.einsum('ij,ij->i', self.data, other.data)
@@ -179,9 +179,12 @@ class Points(object):
         return Points(whiten(self.data))
 
     @staticmethod
+    def angles(p1, p2):
+        return (p1.cross(p2) / (abs(p1) * abs(p2))).asines()
+
+    @staticmethod
     def angle(p1, p2):
-        sins = p1.cross(p2) / (abs(p1) * abs(p2)) 
-        return abs(Points(np.arcsin(sins.data)))
+        return abs(Points.angles(p1, p2))
 
 
     @staticmethod

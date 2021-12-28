@@ -89,6 +89,7 @@ class Point(object):
             finally:
                 return False
 
+    # TODO Point * list -> Points
     def __mul__(self, other):
         if isinstance(other, Point):
             return Point(x=other.x * self.x, y=other.y * self.y, z=other.z * self.z)
@@ -98,10 +99,8 @@ class Point(object):
             return NotImplemented
 
     def __rmul__(self, other):
-        if isinstance(other, Point) or isinstance(other, Number):
-            return self.__mul__(other)
-        else:
-            return NotImplemented
+        return self.__mul__(other)
+        
 
     def __truediv__(self, other):
         if isinstance(other, Point):
