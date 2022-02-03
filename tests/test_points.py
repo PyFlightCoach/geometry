@@ -1,11 +1,11 @@
 import unittest
 
-from geometry.points import Points
+from geometry import Points, Point
 
 import numpy as np
 import pandas as pd
 
-from geometry import Point, dot_product, cross_product
+from geometry.point import dot_product, cross_product
 
 
 class TestPoints(unittest.TestCase):

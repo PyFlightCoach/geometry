@@ -1,4 +1,5 @@
-from geometry.point import Point, angle_between, is_parallel, scalar_projection, is_perpendicular, min_angle_between, dot_product
+from geometry import Point
+from geometry.point import  angle_between, is_parallel, scalar_projection, is_perpendicular, min_angle_between, dot_product
 import unittest
 from math import pi
 
@@ -90,9 +91,9 @@ class TestPoint(unittest.TestCase):
         self.assertTrue(Point(1, 2, 3) == Point(1, 2, 3))
 
     def test_abs(self):
-        self.assertEqual(abs(Point(x=0, y=0, z=0)), 0)
-        self.assertEqual(abs(Point(x=1, y=0, z=0)), 1)
-        self.assertEqual(abs(Point(x=0, y=100, z=0)), 100)
+        self.assertEqual(abs(Point(0, 0, 0)), 0)
+        self.assertEqual(abs(Point(1, 0, 0)), 1)
+        self.assertEqual(abs(Point(0, 100, 0)), 100)
 
     def test_div(self):
         self.assertAlmostEqual(self.pdiv2 / self.pdiv1, Point(x=1, y=2, z=3))
@@ -121,6 +122,3 @@ class TestPoint(unittest.TestCase):
 
     def test_dot_product(self):
         self.assertEqual(dot_product(Point(1,1,1), Point(1,1,1)), 3)
-
-    def test_eq(self):
-        self.assertNotEqual(Point(1,1,1), None)
