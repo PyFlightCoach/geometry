@@ -26,18 +26,23 @@ def geoms_factory(name, names, Single):
     def count(self):
         return self.data.shape[0]
 
+    meths = {   
+        "names": names,
+        "__init__": __init__,
+        "__getattr__": __getattr__,
+        "__getitem__": __getitem__,
+        "__dir__": __dir__,
+        "to_pandas": to_pandas,
+        "count": property(count)
+    }
+
     Obj =  type(name, (object,),
-        {   
-            "names": names,
-            "__init__": __init__,
-            "__getattr__": __getattr__,
-            "__getitem__": __getitem__,
-            "__dir__": __dir__,
-            "to_pandas": to_pandas,
-            "count": property(count)
-        })
+        meths
+        )
     
     Obj.from_pandas = staticmethod(lambda df: Obj(np.array(df)))
+
+    
 
     return Obj
 
