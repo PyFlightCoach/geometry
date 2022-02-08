@@ -17,3 +17,7 @@ from .quaternion import Quaternion
 from .quaternions import Quaternions
 from .transformation import Transformation
 from .line import Line
+
+
+def Euler(x,y,z):
+    return Quaternion.from_euler(Point(x,y,z))
