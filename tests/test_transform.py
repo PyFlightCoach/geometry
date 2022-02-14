@@ -71,5 +71,15 @@ class TestTransformation(unittest.TestCase):
             )(*points.data.T)).T
         )
 
+
+    def test_to_matrix(self):
+        np.testing.assert_array_equal(Transformation().to_matrix(), np.identity(4))
+
+        t1 = Transformation(Point(1,2,3))
+        m1 = t1.to_matrix()
+        assert m1[3,0] == t1.translation.x
+        assert m1[3,1] == t1.translation.y
+
+
 if __name__ == '__main__': 
     unittest.main()

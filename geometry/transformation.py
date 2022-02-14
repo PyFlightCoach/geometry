@@ -41,3 +41,11 @@ class Transformation():
         return coord.translate(self.translation).rotate(
             self.rotation.to_rotation_matrix()
         )
+
+
+
+    def to_matrix(self):
+        outarr = np.identity(4)
+        outarr[:3,:3] = self.rotation.to_rotation_matrix()
+        outarr[3,:3] = self.translation.to_list()
+        return outarr
