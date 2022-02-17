@@ -202,5 +202,12 @@ class TestPoints(unittest.TestCase):
         self.assertEqual(mean.x, np.mean(self.pnts.x))
 
 
+    def test_minloc(self):
+        points = Points.full(Point(1,1,1), 100) * np.concatenate([np.linspace(50,0, 50), np.linspace(0,50, 50)], axis=0)
+        minlocs =  points.minloc()
+        np.testing.assert_array_equal(minlocs.to_list(), [49,49,49])
+
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -169,6 +169,12 @@ class Points(object):
     def min(self):
         return Point(self.x.min(), self.y.min(), self.z.min())
 
+    def minloc(self):
+        return Point(*np.argmin(self.data, axis=0))
+
+    def maxloc(self):
+        return Point(*np.argmax(self.data, axis=0))
+
     def norm(self, mode="elements"):
         if mode == "elements":
             return self / abs(self).max()
