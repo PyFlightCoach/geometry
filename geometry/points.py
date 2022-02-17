@@ -38,8 +38,7 @@ class Points(object):
     def __getitem__(self, index):
         if isinstance(index, slice):
             return Points(self.data[index, :])
-        elif isinstance(index, int):
-            return Point(*list(self.data[index, :]))
+        return Point(*list(self.data[index, :]))
 
     def __abs__(self):
         return np.sqrt(self.x**2 + self.y**2 + self.z**2)
@@ -173,10 +172,10 @@ class Points(object):
         return Point(self.x.min(), self.y.min(), self.z.min())
 
     def minloc(self):
-        return Point(*np.argmin(self.data, axis=0))
+        return Point(*list(np.argmin(self.data, axis=0)))
 
     def maxloc(self):
-        return Point(*np.argmax(self.data, axis=0))
+        return Point(*list(np.argmax(self.data, axis=0)))
 
     def norm(self, mode="elements"):
         if mode == "elements":

@@ -187,10 +187,10 @@ class TestPoints(unittest.TestCase):
         )
 
     def test_getitem(self):
-        np.testing.assert_array_equal(
-            self.pnts[0].to_list(),
-            [1, 0, 0]
-        )
+        np.testing.assert_array_equal(self.pnts[0].to_list(),[1, 0, 0])
+        np.testing.assert_array_equal(self.pnts[-1].to_list(),[1, 2, 3])
+        
+
 
     def test_iter(self):
         for point in self.pnts:
@@ -205,6 +205,7 @@ class TestPoints(unittest.TestCase):
     def test_minloc(self):
         points = Points.full(Point(1,1,1), 100) * np.concatenate([np.linspace(50,0, 50), np.linspace(0,50, 50)], axis=0)
         minlocs =  points.minloc()
+        #assert isinstance(minlocs.x, int)
         np.testing.assert_array_equal(minlocs.to_list(), [49,49,49])
 
     def test_slice(self):
