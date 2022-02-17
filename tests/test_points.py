@@ -207,7 +207,9 @@ class TestPoints(unittest.TestCase):
         minlocs =  points.minloc()
         np.testing.assert_array_equal(minlocs.to_list(), [49,49,49])
 
-
+    def test_slice(self):
+        points = Points.full(Point(1,1,1), 100) * np.linspace(0,99, 100)
+        np.testing.assert_array_equal(points[:50].data, (Points.full(Point(1,1,1), 50) * np.linspace(0,49, 50)).data)
 
 if __name__ == "__main__":
     unittest.main()

@@ -36,7 +36,10 @@ class Points(object):
         return self.data.shape[0]  
 
     def __getitem__(self, index):
-        return Point(*list(self.data[index, :]))
+        if isinstance(index, slice):
+            return Points(self.data[index, :])
+        elif isinstance(index, int):
+            return Point(*list(self.data[index, :]))
 
     def __abs__(self):
         return np.sqrt(self.x**2 + self.y**2 + self.z**2)
