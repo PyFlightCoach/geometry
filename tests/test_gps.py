@@ -23,7 +23,7 @@ class TestGPSPosition(unittest.TestCase):
         
         diff= p0 - p0n # should be south vector
         self.assertAlmostEqual(diff.y, 0)
-        self.assertLess(diff.x, 0)
+        self.assertLess(-diff.x, 0)
         
         p0e= GPSPosition( 50.206, 4.195)
         diff= p0 - p0e # should be west vector

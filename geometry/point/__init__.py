@@ -2,6 +2,13 @@ from geometry.factory import gfactory
 import numpy as np
 from typing import Union, List
 
+
+class Points:
+    pass
+
+class Point(Points):
+    pass
+
 Points, Point = gfactory("Point", ["x", "y", "z"])
 
 

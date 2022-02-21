@@ -9,7 +9,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from .point import Point, Points#, cross_product, dot_product, cos_angle_between, scalar_projection,vector_projection
+from .points import Point, Points#, cross_product, dot_product, cos_angle_between, scalar_projection,vector_projection
 #from .gps import GPSPosition
 #from .coordinate_frame import Coord
 #from .quaternion import Quaternion
