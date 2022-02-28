@@ -53,7 +53,7 @@ class GPSPositions(object):
             others = other
         assert self.count == others.count
         return Points(np.column_stack([
-            (others.latitude - self.latitude) * GPSPosition.LOCATION_SCALING_FACTOR,
+            -(others.latitude - self.latitude) * GPSPosition.LOCATION_SCALING_FACTOR,
              -(others.longitude - self.longitude) * GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
              np.zeros(self.count)
         ]))
@@ -62,7 +62,7 @@ class GPSPositions(object):
         if isinstance(pin, Point):
             pin = Points.full(pin, self.count)
         assert pin.count == self.count
-        latb = self.latitude - pin.x / GPSPosition.LOCATION_SCALING_FACTOR
+        latb = self.latitude + pin.x / GPSPosition.LOCATION_SCALING_FACTOR
 
         return GPSPositions(
             np.column_stack([

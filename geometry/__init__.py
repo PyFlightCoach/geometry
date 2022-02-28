@@ -19,5 +19,10 @@ from .transformation import Transformation
 from .line import Line
 
 
-def Euler(x,y,z):
-    return Quaternion.from_euler(Point(x,y,z))
+def Euler(*args):
+    if len(args)==3:
+        return Quaternion.from_euler(Point(x,y,z))
+    if len(args)==1:
+        if isinstance(args[0], Points):
+            return Quaternions.from_euler(args[0])
+    raise NotImplementedError

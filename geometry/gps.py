@@ -52,7 +52,7 @@ class GPSPosition(object):
         return 'lat: ' + str(self.latitude) + ', long: ' + str(self.longitude)
 
     def offset(self, pin: Union[Point, Points]):
-        latb = self.latitude - pin.x / self.LOCATION_SCALING_FACTOR
+        latb = self.latitude + pin.x / self.LOCATION_SCALING_FACTOR
 
         return GPSPosition(
             latb,
@@ -78,7 +78,7 @@ class GPSPosition(object):
             Point: vector from other to self
         """
         return Point(
-            (other.latitude - self.latitude) * GPSPosition.LOCATION_SCALING_FACTOR,
+            -(other.latitude - self.latitude) * GPSPosition.LOCATION_SCALING_FACTOR,
             -(other.longitude - self.longitude) * GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
             0
         )
