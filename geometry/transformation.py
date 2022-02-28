@@ -42,6 +42,8 @@ class Transformation():
             self.rotation.to_rotation_matrix()
         )
 
+    def __mul__(self, other: float):
+        return Transformation(self.translation * other, self.rotation)
 
 
     def to_matrix(self):
