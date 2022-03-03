@@ -9,6 +9,16 @@ class Transformation():
         self.translation = translation
         self.rotation = rotation
 
+
+    def __getattr__(self, name):
+        if name in list("xyz"):
+            return getattr(self.translation, name)
+        if len(name) == 2 and name[0] == "r":
+            if name[1] in list("wxyz"):
+                return getattr(self.rotation, name[1])
+        raise AttributeError(name)
+
+
     @staticmethod
     def from_coords(coord_a: Coord, coord_b: Coord):
         return Transformation(
