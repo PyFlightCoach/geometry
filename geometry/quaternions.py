@@ -1,58 +1,21 @@
 from typing import Union
-from geometry.quaternion import Quaternion
+from .base import Base
 from numbers import Number
-from geometry import Point, Points
-
+from geometry import Point
 import numpy as np
 import pandas as pd
 
 
-class Quaternions():
-    def __init__(self, data):
-        """Args: data (np.array): npoint * 4 array of point locations"""
-        self.data = data
-        assert data.shape[1] == 4
-
-    @property
-    def w(self):
-        return self.data[:, 0]
-
-    @property
-    def x(self):
-        return self.data[:, 1]
-
-    @property
-    def y(self):
-        return self.data[:, 2]
-
-    @property
-    def z(self):
-        return self.data[:, 3]
-
+class Quaternion():
+    cols = ["w", "x", "y", "z"]
+    
     @property
     def xyzw(self):
         return np.array([self.x, self.y, self.z, self.w]).T
 
-    def __getitem__(self, index):
-        return Quaternion(*list(self.data[index, :]))
-
-    @staticmethod
-    def from_pandas(df):
-        return Quaternions(np.array(df))
-
-    def to_pandas(self, prefix='', suffix='', columns=['w', 'x', 'y', 'z'], index=None):
-        return pd.DataFrame(
-            self.data, 
-            columns=[prefix + col + suffix for col in columns],
-            index=index
-        )
-
-    def __abs__(self):
-        return np.sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)
-
     @property
     def axis(self):
-        return Points(self.data[:, 1:])
+        return Point(self.data[:, 1:])
 
     def norm(self):
         dab = 1 / abs(self)

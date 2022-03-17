@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+from typing import Type
 
 def gfactory(name, keys):
     Plural = geoms_factory(name + "s", keys)

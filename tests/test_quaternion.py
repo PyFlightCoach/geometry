@@ -1,15 +1,27 @@
 import unittest
-from geometry import Quaternion, Point
-from math import pi
+from pytest import mark, approx, raises
+from geometry.quaternion import Quaternion
+from geometry.point import Point
+
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 
 
-testvals = np.array([0, 0, 0])
+def test_mul():
+    q1 = Quaternion(np.random.random((100, 4))).norm()
+    q2 = Quaternion(np.random.random((100, 4))).norm()
+
+    # Quaternion * Quaternion
+    np.testing.assert_array_almost_equal(
+        (q1 * q2).data,
+        np.array([(R.from_quat(_1.xyzw()) * R.from_quat(_2.xyzw())).to_quat() for _1, _2 in zip(q1, q2)]),
+        err_msg="failed to do Quaternions * Quaternions"
+    )
 
 
 
+@mark.skip("moving above")
 class TestQuaternion(unittest.TestCase):
   
     def test_from_euler(self):

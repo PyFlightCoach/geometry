@@ -1,32 +1,14 @@
 
-from . import Point, dot_product, cross_product, Points
+from .point import Point
+from .base import Base
+
 from math import atan2, asin, copysign, pi, sqrt
 from typing import List, Dict, Union, Tuple
 import numpy as np
 
 
-class Quaternion():
-    def __init__(self, w: float, x: float, y: float, z: float):
-        self.w = w
-        self.x = x
-        self.y = y
-        self.z = z
-
-    def __iter__(self):
-        for i in [self.w, self.x, self.y, self.z]:
-            yield i
-
-    def to_tuple(self):
-        return(self.w, self.x, self.y, self.z)
-
-    def to_list(self):
-        return [self.w, self.x, self.y, self.z]
-
-    def to_dict(self, prefix=''):
-        return {prefix+'w': self.w, prefix+'x': self.x, prefix+'y': self.y, prefix+'z': self.z}
-
-    def __abs__(self):
-        return sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
+class Quaternion(Base):
+    cols=["w", "x", "y", "z"]
 
     @staticmethod
     def zero():
@@ -38,11 +20,10 @@ class Quaternion():
 
     @property
     def axis(self):
-        return Point(self.x, self.y, self.z)
+        return Point(self.data[:,1:])
 
     def norm(self):
-        dab = 1 / abs(self)
-        return self * dab
+        return self / abs(self)
 
     def conjugate(self):
         return Quaternion(self.w, -self.x, -self.y, -self.z)
@@ -52,29 +33,28 @@ class Quaternion():
 
     def __mul__(self, other):
         if isinstance(other, Quaternion):
-            return Quaternion(
-                *tuple(
-                    [self.w * other.w - dot_product(self.axis, other.axis)] +
-                    list(
-                        self.w * other.axis +
-                        other.w * self.axis +
-                        cross_product(self.axis, other.axis)
-                    )))
-        elif isinstance(other, float):
-            return Quaternion(
-                other * self.w,
-                other * self.x,
-                other * self.y,
-                other * self.z
-            )
-        else:
-            return NotImplemented
+            if not len(self) == len(other):
+                pass
+            else:
+                w = self.w * other.w - self.axis.dot(other.axis)
+#
+                xyz = self.w * other.axis + other.w * self.axis + \
+                    self.axis.cross(other.axis)
 
-    def transform_point(self, point: Union[Point, Points]):
+                return Quaternion(np.column_stack([w, xyz.data]))
+        elif isinstance(other, float) or isinstance(other, int):
+            return Quaternion(self.data * other)
+        elif isinstance(other, np.ndarray):
+            if other.ndim == 1:
+                if len(other) == self.count:
+                    return Quaternion(self.data * other[:, np.newaxis])
+        elif isinstance(other, Quaternion):
+            return self * Quaternion.full(other, self.count)
+        raise NotImplementedError(f"Not implemented for {other.__class__.__name__} yet")
+        
+    def transform_point(self, point: Point):
         '''Transform a point by the rotation described by self'''
-        if isinstance(point, Points):
-            return NotImplemented
-        elif isinstance(point, Point):
+        if isinstance(point, Point):
             return (self * Quaternion(*[0] + list(point)) * self.inverse()).axis
         else:
             return NotImplemented
