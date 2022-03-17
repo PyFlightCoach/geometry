@@ -1,16 +1,25 @@
-from geometry import Point, Quaternion, Coord, Points, Quaternions
+from geometry import Point, Quaternion, Point, P0, Q0, Coord
 
 import numpy as np
 from typing import Union
 
 
-class Transformation():
-    def __init__(self, translation: Point=Point(0.0,0.0,0.0), rotation: Quaternion=Quaternion(1.0,0.0,0.0,0.0)):
-        self.translation = translation
-        self.rotation = rotation
+class Transformation:
+    def __init__(self, p: Point=P0(), q: Quaternion=Q0()):
+        assert len(p) == len(q)
+        self.p = p
+        self.q = q
+
+    @property
+    def translation(self) -> Point:
+        return self.p
+
+    @property
+    def rotation(self) -> Quaternion:
+        return self.q
 
     @staticmethod
-    def from_coords(coord_a: Coord, coord_b: Coord):
+    def from_coords(coord_a, coord_b):
         return Transformation(
             coord_b.origin - coord_a.origin,
             Quaternion.from_rotation_matrix(
@@ -20,24 +29,19 @@ class Transformation():
                 ))
         )
 
-    def rotate(self, point: Union[Point, Points]):
-        if isinstance(point, Point):
-            return self.rotation.transform_point(point)
-        elif isinstance(point, Points):
-            return Quaternions.from_quaternion(self.rotation, point.count).transform_point(point)
-        else:
-            return NotImplemented
+    def rotate(self, oin: Union[Point, Quaternion]):
+        if isinstance(oin, Point):
+            return self.q.transform_point(oin)
+        elif isinstance(oin, Quaternion):
+            return self.q * oin
 
-    def translate(self, point: Union[Point, Points]):
-        return point + self.translation
+    def translate(self, point: Point):
+        return point + self.p
 
-    def point(self, point: Union[Point, Points]):
-        return self.translate(self.rotate(point))
+    def point(self, point: Point):
+        return self.translate(self.rotate(point))       
 
-    def quat(self, quat: Union[Quaternion, Quaternions]):
-        return self.rotation * quat
-
-    def coord(self, coord: Coord = Coord.from_nothing()):
-        return coord.translate(self.translation).rotate(
-            self.rotation.to_rotation_matrix()
+    def coord(self, coord):
+        return coord.translate(self.p).rotate(
+            self.q.to_rotation_matrix()
         )

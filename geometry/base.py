@@ -66,9 +66,29 @@ class Base:
     def __getitem__(self, sli):
         return self.__class__(self.data[sli,:])
 
-    @staticmethod
-    def _data(other):
-        return other.data if isinstance(other, Base) else other
+    def _dprep(self, other):        
+        arr = other.data if isinstance(other, Base) else other
+        l , w = len(self), len(self.cols)
+        if isinstance(arr, np.ndarray):
+            if arr.shape == (l,w):
+                return arr
+            elif arr.shape == (l, 1) or arr.shape == (l,):
+                return np.tile(arr, (w,1)).T
+            elif arr.shape == (1, w) or arr.shape == (w,):
+                return np.tile(arr, (l,1))
+            elif arr.shape == (1,):
+                return np.full((l,w), arr[0])
+            elif l==1:
+                return arr
+            else:
+                raise ValueError(f"array shape {arr.shape} not handled")
+        elif isinstance(arr, float) or isinstance(arr, int):
+            return np.full((l,w), arr)
+        elif isinstance(other, Base):
+            assert len(other) == 1 or len(other) == l
+            return other.data
+        else:
+            raise ValueError(f"unhandled other datatype ({other.__class__.name})")
 
     def count(self):
         return len(self)
@@ -76,44 +96,33 @@ class Base:
     def __len__(self):
         return self.data.shape[0]
 
+
     def __eq__(self, other):
-        return np.all(self.data==Base._data(other))
+        return np.all(self.data==self._dprep(other))
 
     def __add__(self, other):
-        return self.__class__(self.data + Base._data(other))
+        return self.__class__(self.data + self._dprep(other))
     
     def __radd__(self, other):
         return self + other
 
     def __sub__(self, other):
-        return self.__class__(self.data - Base._data(other))
+        return self.__class__(self.data - self._dprep(other))
     
     def __rsub__(self, other):
-        return self.__class__(Base._data(other) - self.data)
+        return self.__class__(self._dprep(other) - self.data)
 
     def __mul__(self, other):
-        return self.__class__(self.data * Base._data(other))
+        return self.__class__(self.data * self._dprep(other))
 
     def __rmul__(self, other):
-        return self.__class__(Base._data(other) * self.data)
+        return self.__class__(self._dprep(other) * self.data)
 
     def __rtruediv__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__class__(other.data / self.data)
-        elif isinstance(other, np.ndarray):
-            if other.shape == (len(self), 1):
-                return np.tile(other, (4,1)).T / self
-        return self.__class__(Base._data(other) / self.data)
+        return self.__class__(self._dprep(other) / self.data)
 
     def __truediv__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__class__(self.data / other.data)
-        elif isinstance(other, np.ndarray):
-            if other.shape == (len(self),):
-                return self / np.tile(other, (4,1)).T    
-        return self.__class__(self.data / Base._data(other))
-
-
+        return self.__class__(self.data / self._dprep(other))
 
     def __str__(self):
         return str(pd.DataFrame(self.data, columns=self.__class__.cols))
@@ -125,7 +134,7 @@ class Base:
         return -1 * self
 
     def dot(self, other):
-        return np.einsum('ij,ij->i', self.data, Base._data(other))
+        return np.einsum('ij,ij->i', self.data, self._dprep(other))
 
 
     def diff(self, dt:np.array):

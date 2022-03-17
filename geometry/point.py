@@ -3,6 +3,7 @@ from .base import Base
 import numpy as np
 import pandas as pd
 from typing import List 
+from warnings import warn
 
 
 class Point(Base):
@@ -13,7 +14,12 @@ class Point(Base):
     ]
 
     def scale(self, value):
-        return self * value / abs(self)
+        a, b=value, abs(self)
+        res = a/b
+        res[b==0] = 0
+        res = self * res
+        
+        return res
         
     def unit(self):
         return self.scale(1)
@@ -46,15 +52,15 @@ class Point(Base):
     
     @staticmethod
     def X(value=1, count=1):
-        return Point(np.tile([value,0,0], count))
+        return Point(np.tile([value,0,0], (count, 1)))
 
     @staticmethod
     def Y(value=1, count=1):
-        return Point(np.tile([0,value,0], count))
+        return Point(np.tile([0,value,0], (count, 1)))
 
     @staticmethod
     def Z(value=1, count=1):
-        return Point(np.tile([0,0,value], count))
+        return Point(np.tile([0,0,value], (count, 1)))
 
     def rotate(self, rmat=np.ndarray):
         if len(rmat.shape) == 3:
@@ -90,9 +96,6 @@ class Point(Base):
     @staticmethod
     def zeros(count=1):
         return Point(np.zeros((count,3)))
-
-
-from warnings import warn
 
 def Points(*args, **kwargs):
     warn("Points is deprecated, you can now just use Point", DeprecationWarning)
@@ -136,15 +139,10 @@ def cos_angle_between(a: Point, b: Point) -> np.ndarray:
         raise ValueError("cannot measure the angle to a zero length vector")
     return a.unit().dot(b.unit())
 
-Point.cos_angle_between = cos_angle_between
 
 @ppmeth
 def angle_between(a: Point, b: Point) -> np.ndarray:
     return np.arccos(a.cos_angle_between(b))
-
-Point.angle_between = angle_between
-
-
 
 @ppmeth
 def scalar_projection(a: Point, b: Point) -> Point:
@@ -152,17 +150,11 @@ def scalar_projection(a: Point, b: Point) -> Point:
         return 0
     return a.cos_angle_between(b) * abs(a)
 
-Point.scalar_projection = scalar_projection
-
-
 @ppmeth
 def vector_projection(a: Point, b: Point) -> Point:
     if abs(a) == 0:
         return Point.zeros()
     return b.scale(a.scalar_projection(b))
-
-Point.vector_projection = vector_projection
-
 
 @ppmeth
 def is_parallel(a: Point, b: Point, tolerance=1e-6):
@@ -170,30 +162,18 @@ def is_parallel(a: Point, b: Point, tolerance=1e-6):
         return True
     return abs(a.cos_angle_between(b) - 1) < tolerance
 
-Point.is_parallel = is_parallel
-
-
 @ppmeth
 def is_perpendicular(a: Point, b: Point, tolerance=1e-6):
     return abs(a.dot(b)) < tolerance
-
-Point.is_perpendicular = is_perpendicular
-
 
 @ppmeth
 def min_angle_between(p1: Point, p2: Point):
     angle = angle_between(p1, p2) % np.pi
     return min(angle, np.pi - angle)
 
-Point.min_angle_between = min_angle_between
-
-
 @ppmeth
 def angle_between(a: Point, b: Point) -> float: 
     return np.arccos(cos_angle_between(a, b))
-
-
-
 
 def arbitrary_perpendicular(v: Point) -> Point:
     if v.x == 0 and v.y == 0:

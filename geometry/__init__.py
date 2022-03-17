@@ -9,10 +9,10 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from .point import Point#  cross_product, dot_product, cos_angle_between, scalar_projection,vector_projection
-#from .gps import GPSPosition
-#from .coordinate_frame import Coord
-#from .quaternion import Quaternion
-#from .quaternions import Quaternions
-#from .transformation import Transformation
-#from .line import Line
+from .point import *
+from .quaternion import *
+from .gps import GPS
+from .coordinate_frame import Coord
+from .transformation import Transformation
+
+

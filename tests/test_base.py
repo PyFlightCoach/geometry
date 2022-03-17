@@ -16,6 +16,39 @@ def test_init_nparray():
     np.testing.assert_array_equal(abc.data, np.ones(3).reshape((1,3)))
 
 
+
+def test__dprep():
+    np.testing.assert_array_equal(
+        ABC(np.ones((10,3)))._dprep(np.ones(10)), 
+        np.ones((10,3))
+    )
+
+    np.testing.assert_array_equal(
+        ABC(np.ones((10,3)))._dprep(np.ones((10,3))), 
+        np.ones((10,3))
+    )
+
+    with pytest.raises(ValueError):
+        ABC(np.ones((10,3)))._dprep(np.ones((5,3)))
+
+    np.testing.assert_array_equal(
+        ABC(np.ones((10,3)))._dprep(np.ones(3)), 
+        np.ones((10,3))
+    )
+
+    np.testing.assert_array_equal(
+        ABC(np.ones((10,3)))._dprep(np.array([1])), 
+        np.ones((10,3))
+    )
+
+    np.testing.assert_array_equal(
+        ABC(np.ones((10,3)))._dprep(1), 
+        np.ones((10,3))
+    )
+
+
+
+
 def test_init_values():
     abc = ABC(1,2,3)
     np.testing.assert_array_equal(abc.data, np.array([[1,2,3]]))
@@ -81,8 +114,8 @@ def test_eq():
     assert ABC(np.ones((5,3))) == ABC(np.ones((5,3)))
 
     assert not ABC(np.zeros((5,3))) == ABC(np.ones((5,3)))
-
-    assert not ABC(np.zeros((5,3))) == ABC(np.zeros((6,3)))
+    with pytest.raises(ValueError):
+        ABC(np.zeros((5,3))) == ABC(np.zeros((6,3)))
 
     assert ABC(1,2,4) == ABC(1.0, 2.0, 4.0)
     
@@ -103,6 +136,10 @@ def test_mul():
     a = ABC(1,1,1) * np.array([2])
     b = np.array([2]) * ABC(1,1,1)
     assert a.data.shape == b.data.shape
+
+    assert ABC.full(ABC(1,1,1), 10) * np.ones(10) == ABC(np.ones((10,3)))
+
+
 
 def test_div():
     assert ABC(1,2,3) / 2 == ABC(0.5,1,1.5)

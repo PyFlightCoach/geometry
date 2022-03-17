@@ -10,82 +10,74 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import math
+from geometry.base import Base
 from geometry.point import Point
-from geometry.points import Points
 from typing import List, Union
 import numpy as np
 import pandas as pd
+
 
 def safecos(angledeg: Union[float, int, np.ndarray]):
     if isinstance(angledeg, float) or isinstance(angledeg, int):
         return max(np.cos(np.radians(angledeg)), 0.01)
     elif isinstance(angledeg, np.ndarray):
         return np.maximum(np.cos(np.radians(angledeg)), np.full(len(angledeg), 0.01))
-    
 
-class GPSPosition(object):
+
+erad = 6378100
+LOCFAC = math.radians(erad)
+
+
+class GPS(Base):
+    cols = ["lat", "long"]
     # was 6378137, extra precision removed to match ardupilot
-    approx_earth_radius = 6378100
-    LOCATION_SCALING_FACTOR = math.radians(approx_earth_radius)
 
-    def __init__(self, latitude: float, longitude: float):
-        self.latitude = latitude
-        self.longitude = longitude
-        self._longitude_scale = safecos(self.latitude)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._longfac = safecos(self.lat)
 
-    def __getattr__(self, name):
-        if name in ["lat", "la"]:
-            return self.latitude
-        if name in ["long", "lon", "lo"]:
-            return self.longitude
 
-    def to_list(self):
-        return [self.latitude, self.longitude]
+    def offset(self, pin: Point):
+        assert len(pin) == len(self)
+        latb = self.lat - pin.x / LOCFAC
 
-    def to_tuple(self):
-        return (self.latitude, self.longitude)
-
-    def to_dict(self):
-        return dict(latitude=self.latitude, longitude=self.longitude)
-
-    def __str__(self):
-        return 'lat: ' + str(self.latitude) + ', long: ' + str(self.longitude)
-
-    def offset(self, pin: Union[Point, Points]):
-        latb = self.latitude - pin.x / self.LOCATION_SCALING_FACTOR
-
-        return GPSPosition(
+        return GPS(
             latb,
-            self.longitude + pin.y / (self.LOCATION_SCALING_FACTOR * safecos(latb))
-        )
-
-    def _to_xy(self):
-        lat = self.latitude * math.pi / 180
-        lon = self.longitude * math.pi / 180
-
-        return [
-            GPSPosition.approx_earth_radius * math.cos(lat) * math.cos(lon),
-            GPSPosition.approx_earth_radius * math.cos(lat) * math.sin(lon)
-        ]
-
-    def __sub__(self, other) -> Point:
-        """Gives the ned vector from other to self
-
-        Args:
-            other (GPSPostion): [description]
-
-        Returns:
-            Point: vector from other to self
-        """
-        return Point(
-            (other.latitude - self.latitude) * GPSPosition.LOCATION_SCALING_FACTOR,
-            -(other.longitude - self.longitude) * GPSPosition.LOCATION_SCALING_FACTOR * self._longitude_scale,
-            0
+            self.long + pin.y / (LOCFAC * safecos(latb))
         )
 
     def __eq__(self, other) -> bool:
-        return self.lat == other.lat and self.long == other.long
+        return np.all(self.data == other.data)
 
+    def __sub__(self, other) -> Point:
+        assert isinstance(other, GPS)
+        if len(other) == len(self):
+            return Point(
+                (other.lat - self.lat) * LOCFAC,
+                -(other.long - self.long) * LOCFAC * self._longfac,
+                np.zeros(len(self))
+            )
+        elif len(other) == 1:
+            return self - GPS.full(other, len(self))
+        elif len(self) == 1:
+            return GPS.full(self, len(self)) - other
+        else:
+            raise ValueError(f"incompatible lengths for sub ({len(self)}) - ({len(other)})")
+
+    def offset(self, pin: Point):
+        if len(pin) == 1 and len(self) > 1:
+            pin = Point.full(pin, self.count)
+        elif len(self) == 1 and len(pin) > 1:
+            return self.full(len(pin)).offset(pin)
+        
+        if not len(pin) == len(self):
+            raise ValueError(f"incompatible lengths for offset ({len(self)}) - ({len(pin)})")
+
+        latb = self.lat - pin.x / LOCFAC
+        return GPS(
+            latb,
+            self.long + pin.y / (LOCFAC * safecos(latb))
+        )
 
 
 
@@ -99,11 +91,11 @@ static constexpr float LOCATION_SCALING_FACTOR_INV = 89.83204953368922f;
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
+                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * long_scale(),
                     (alt - loc2.alt) * 0.01f);
 }
 
-float Location::longitude_scale() const
+float Location::long_scale() const
 {
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
     return MAX(scale, 0.01f);
@@ -112,8 +104,8 @@ float Location::longitude_scale() const
 
 
 if __name__ == "__main__":
-    home = GPSPosition(51.459387, -2.791393)
+    home = GPS(51.459387, -2.791393)
 
-    new = GPSPosition(51.458876, -2.789092)
+    new = GPS(51.458876, -2.789092)
     coord = home - new
     print(coord.x, coord.y)
