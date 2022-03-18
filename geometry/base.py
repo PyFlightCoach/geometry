@@ -62,7 +62,8 @@ class Base:
     
     def __getattr__(self, name):
         if name in self.__class__.cols:
-            return self.data[:,self.__class__.cols.index(name)]
+            res = self.data[:,self.__class__.cols.index(name)]
+            return res[0] if len(res) == 1 else res
         elif name in self.__class__.from_np + self.__class__.from_np_base:
             return self.__class__(getattr(np, name)(self.data))
         raise AttributeError(f"Cannot get attribute {name}")
@@ -158,6 +159,21 @@ class Base:
             index=index
         )
 
+    def to_dict(self):
+        return {key: getattr(self, key) for key in self.cols}
+
     @classmethod
     def full(cls, val, count):
         return cls(np.tile(val.data, (count, 1)))
+
+    def max(self):
+        return self.__class__(self.data.max(axis=0))
+
+    def min(self):
+        return self.__class__(self.data.min(axis=0))
+
+    def minloc(self):
+        return self.__class__(self.data.argmin(axis=0))
+
+    def maxloc(self):
+        return self.__class__(self.data.argmax(axis=0))
