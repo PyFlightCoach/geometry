@@ -16,3 +16,6 @@ from .coordinate_frame import Coord
 from .transformation import Transformation
 
 
+def Euler(*args, **kwargs):
+    return Quaternion.from_euler(Point(*args, **kwargs))
+    

@@ -1,3 +1,5 @@
 # README #
-WIP tools for handling 3D geometry 
+
+Tools for handling 3D geometry 
+
 
