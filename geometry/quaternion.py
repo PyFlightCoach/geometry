@@ -56,13 +56,18 @@ class Quaternion(Base):
         
     def transform_point(self, point: Point):
         '''Transform a point by the rotation described by self'''
-        if len(point) == 1:
-            point = Point.full(point, len(self))
 
         if len(point) == len(self):
             qdata = np.column_stack((np.zeros(len(self)), point.data))
             return (self * Quaternion(qdata) * self.inverse()).axis
-            
+
+        if len(point) == 1 and len(self) > 1:
+            return self.transform_point(Point.full(point, len(self))) 
+
+
+        if len(self) == 1 and len(point) > 1:
+            return Quaternion.full(self, len(point)).transform_point(point)
+
         else:
             raise ValueError()
 
@@ -210,7 +215,7 @@ class Quaternion(Base):
                 q = [t, m[1, 2] - m[2, 1], m[2, 0] - m[0, 2], m[0, 1] - m[1, 0]]
 
         q = np.array(q).astype('float64')
-        q *= 0.5 / sqrt(t)
+        q *= 0.5 / np.sqrt(t)
         return Quaternion(*q)
 
     def __str__(self):

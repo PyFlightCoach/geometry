@@ -28,12 +28,7 @@ class Base:
                 self.data = self.__class__._clean_data(np.concatenate([a.data for a in args[0]]))
             
             elif isinstance(args[0], pd.DataFrame):
-                _cols = []
-                for col in self.__class__.cols:
-                    for dfcol in args[0].columns:
-                        if col in dfcol:
-                            _cols.append(dfcol)
-                self.data = self.__class__._clean_data(np.array(args[0][_cols]))
+                self.data = self.__class__._clean_data(np.array(args[0]))
 
         elif len(args) == len(self.__class__.cols):
             #three args passed, each represents a col

@@ -35,6 +35,7 @@ class Coord(Base):
     
     @staticmethod
     def from_axes(o:Point, x:Point, y:Point, z:Point):
+        assert len(o) == len(x) == len(y) == len(z)
         return Coord(np.concatenate([
             o.data,
             x.unit().data,
@@ -44,61 +45,42 @@ class Coord(Base):
 
     @staticmethod
     def from_nothing(count=1):
-        return Coord(P0(count), PX(count), PY(count), PZ(count))
+        return Coord.from_axes(P0(count), PX(1,count), PY(1,count), PZ(1,count))
 
     @staticmethod
     def from_xy(origin: Point, x_axis: Point, y_axis: Point):
-        assert len(origin) == len(x_axis) == len(y_axis)
         z_axis = x_axis.cross(y_axis)
-        return Coord(origin, x_axis, z_axis.cross(x_axis), z_axis)
+        return Coord.from_axes(origin, x_axis, z_axis.cross(x_axis), z_axis)
 
     @staticmethod
     def from_yz(origin: Point, y_axis: Point, z_axis: Point):
-        assert len(origin) == len(y_axis) == len(z_axis)
         x_axis = y_axis.cross(z_axis)
-        return Coord(origin, x_axis, y_axis, x_axis.cross(y_axis))
+        return Coord.from_axes(origin, x_axis, y_axis, x_axis.cross(y_axis))
 
     @staticmethod
     def from_zx(origin: Point, z_axis: Point, x_axis: Point):
-        assert len(origin) == len(z_axis) == len(x_axis)
         y_axis = z_axis.cross(x_axis)
-        return Coord(origin, y_axis.cross(z_axis), y_axis, z_axis)
+        return Coord.from_axes(origin, y_axis.cross(z_axis), y_axis, z_axis)
 
     def rotation_matrix(self):
-        return np.array([
-            self.x_axis.data, 
-            self.y_axis.data, 
-            self.z_axis.data
-        ])
-
+        return self.data[:,3:].reshape(len(self),-3,3)
 
     def inverse_rotation_matrix(self):
-        return np.array([
-            [self.x_axis.x, self.y_axis.x, self.z_axis.x],
-            [self.x_axis.y, self.y_axis.y, self.z_axis.y],
-            [self.x_axis.z, self.y_axis.z, self.z_axis.z]
-        ])
+        return Quaternion.from_rotation_matrix(self.rotation_matrix()).inverse().to_rotation_matrix()
 
-    def rotate(self, rotation_matrix=np.ndarray):
-        assert rotation_matrix.shape[1:] == (3, 3)
-        assert rotation_matrix.shape[0] == len(self.origin) or rotation_matrix.shape[0] == 1
-
-        return Coord(
-            origin=self.origin,
-            x_axis=self.x_axis.rotate(rotation_matrix),
-            y_axis=self.y_axis.rotate(rotation_matrix),
-            z_axis=self.z_axis.rotate(rotation_matrix)
+    def rotate(self, rotation=Quaternion):
+        return Coord.from_axes(
+            self.origin,
+            rotation.transform_point(self.x_axis),
+            rotation.transform_point(self.y_axis),
+            rotation.transform_point(self.z_axis)
         )
 
     def __eq__(self, other):
-        return \
-            self.origin == other.origin and \
-            self.x_axis == other.x_axis and \
-            self.y_axis == other.y_axis and \
-            self.z_axis == other.z_axis
+        return self.data == other.data
 
     def translate(self, point):
-        return Coord(self.origin + point, self.x_axis, self.y_axis, self.z_axis)
+        return Coord.from_axes(self.origin + point, self.x_axis, self.y_axis, self.z_axis)
 
     def get_plot_df(self, length=10):
         def make_ax(ax: Point, colour: str):

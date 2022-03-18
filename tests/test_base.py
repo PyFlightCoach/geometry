@@ -84,8 +84,8 @@ def test_init_empty():
         ABC()
 
 def test_init_df():
-    abc = ABC(pd.DataFrame(np.tile([1,2,3], (20,1)), columns=list("bca")))
-    assert all(abc.a == 3)
+    abc = ABC(pd.DataFrame(np.tile([1,2,3], (20,1)), columns=list("abc")))
+    assert all(abc.c == 3)
 
 def test_attr():
     abc = ABC(np.ones((5,3)))
