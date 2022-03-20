@@ -101,7 +101,7 @@ class Point(Base):
                 c.y * s.x, 
                 c.x * c.y
             ]
-        ])
+        ]).T
 
     @staticmethod
     def zeros(count=1):

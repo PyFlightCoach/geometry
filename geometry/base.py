@@ -76,9 +76,9 @@ class Base:
     @classmethod
     def length_check(cls, a, b):
         if len(a) == 1 and len(b) > 1:
-            a = a.__cls__.full(a, len(b))
+            a = a.tile(len(b))
         elif len(b) == 1 and len(a) > 1:
-            b = b.__cls__.full(b, len(a))
+            b = b.tile(len(a))
         elif len(a) > 1 and len(b) > 1 and not len(a) == len(b):
             raise TypeError(f"lengths of passed arguments must be equal or 1, got {len(a)}, {len(b)}")
         return a, b
@@ -184,6 +184,9 @@ class Base:
             columns=cols,
             index=index
         )
+
+    def tile(self, count):
+        return self.__class__(np.tile(self.data, (count, 1)))
 
     def to_dict(self):
         return {key: getattr(self, key) for key in self.cols}

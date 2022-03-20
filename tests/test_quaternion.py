@@ -111,6 +111,17 @@ def test_body_diff():
         Point.X(np.pi/100, 100).data
     )
 
+def test_transform_point2():
+    tqs = Quaternion(np.random.random((10,4))).norm()
+
+    np.testing.assert_array_almost_equal(
+        tqs.transform_point(Point(1, 1, 1)).data,
+        quaternion.rotate_vectors(
+            np.array([np.quaternion(*q.data[0]) for q in tqs]),
+            Point(1,1,1).tile(1).data,
+            axis=1
+        ).reshape(10,3)
+    )
 
 def test_rotate():
     q = Quaternion.from_euler(P0())
@@ -163,22 +174,26 @@ def test_body_axis_rates():
 
 
 
-@mark.skip("to be thought about later")        
+#@mark.skip("to be thought about later")        
 def test_from_rotation_matrix():
 
-    rmats = [
-        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-        np.array(Point(1, 1, 0).to_rotation_matrix()),
-        np.array(Point(0.7, -1.2, 1).to_rotation_matrix())
-    ]
-
-    for rmat in rmats:
-        quat = Quaternion.from_rotation_matrix(rmat)
-
-        rmat2 = quat.to_rotation_matrix()
-
-        
-        np.testing.assert_array_equal(rmat, rmat2)
+    np.testing.assert_array_equal(Quaternion.zero().to_rotation_matrix()[0], np.identity(3))
+    np.testing.assert_array_equal(
+        Quaternion.from_rotation_matrix(np.identity(3)).data[0], 
+        Quaternion.zero().data[0]
+    )
+   # rmats = np.array([
+   #     np.identity(3),
+   #     Point(1, 1, 0).to_rotation_matrix()[0],
+   #     Point(0.7, -1.2, 1).to_rotation_matrix()[0]
+   # ])
+#
+   # quats = Quaternion.from_rotation_matrix(rmats)
+#
+   # rmat2 = quats.to_rotation_matrix()
+#
+   #     
+   # np.testing.assert_array_equal(rmats, rmat2)
 
 
 

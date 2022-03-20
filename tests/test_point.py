@@ -88,3 +88,5 @@ def test_X():
     assert Point.X(1,100) + Point.Y(1,100) + Point.Z(1,100) == Point(np.ones((100,3)))
 
 
+def test_to_rotation_matrix():
+    np.testing.assert_array_equal(P0().to_rotation_matrix()[0],np.identity(3))

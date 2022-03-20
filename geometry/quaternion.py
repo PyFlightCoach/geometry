@@ -16,6 +16,8 @@ from typing import Union, Tuple
 import numpy as np
 from warnings import warn
 from numbers import Number
+from geometry.rotation_matrix import RotationMatrix
+
 
 class Quaternion(Base):
     cols=["w", "x", "y", "z"]
@@ -66,9 +68,7 @@ class Quaternion(Base):
         qdata = np.column_stack((np.zeros(len(a)), b.data))
 
         return (a * Quaternion(qdata) * a.inverse()).axis
-
-
-
+  
     @staticmethod
     def from_euler(eul: Point):
         eul = Point.type_check(eul)
@@ -189,7 +189,7 @@ class Quaternion(Base):
             [1 - 2 * (y2 + z2), 2 * x * y - 2 * s * z, 2 * s * y + 2 * x * z],
             [2 * x * y + 2 * s * z, 1 - 2 * (x2 + z2), -2 * s * x + 2 * y * z],
             [-2 * s * y + 2 * x * z, 2 * s * x + 2 * y * z, 1 - 2 * (x2 + y2)]
-        ])
+        ]).T
 
     @staticmethod
     def from_rotation_matrix(matrix: np.ndarray):

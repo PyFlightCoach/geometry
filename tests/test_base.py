@@ -58,8 +58,6 @@ def test_dot():
     np.testing.assert_array_almost_equal(c, c_check)
 
 
-
-
 def test_init_values():
     abc = ABC(1,2,3)
     np.testing.assert_array_equal(abc.data, np.array([[1,2,3]]))
@@ -152,7 +150,7 @@ def test_mul():
     b = np.array([2]) * ABC(1,1,1)
     assert a.data.shape == b.data.shape
 
-    assert ABC.full(ABC(1,1,1), 10) * np.ones(10) == ABC(np.ones((10,3)))
+    assert ABC(1,1,1).tile(10) * np.ones(10) == ABC(np.ones((10,3)))
 
 
 
@@ -178,7 +176,7 @@ def test_diff():
 
 
 def test_full():
-    full =ABC.full(ABC(1,2,3), 100)
+    full =ABC(1,2,3).tile(100)
 
     assert len(full) == 100
     assert full[50] == ABC(1,2,3)
