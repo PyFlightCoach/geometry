@@ -1,5 +1,5 @@
 from geometry.base import Base
-import pytest
+from pytest import mark, approx, raises
 import numpy as np
 import pandas as pd
 
@@ -28,7 +28,7 @@ def test__dprep():
         np.ones((10,3))
     )
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         ABC(np.ones((10,3)))._dprep(np.ones((5,3)))
 
     np.testing.assert_array_equal(
@@ -47,6 +47,17 @@ def test__dprep():
     )
 
 
+def test_dot():
+    a = ABC(np.random.random((10, 3)))
+    b = ABC(np.random.random((10, 3)))
+
+    c = a.dot(b)
+
+    c_check = np.array([np.dot(_a.data[0], _b.data[0]) for _a, _b in zip(a,b)])
+
+    np.testing.assert_array_almost_equal(c, c_check)
+
+
 
 
 def test_init_values():
@@ -56,11 +67,15 @@ def test_init_values():
     abc = ABC(*[np.ones(10) for _ in range(3)])
     np.testing.assert_array_equal(abc.data, np.ones((10,3)))
 
-    with pytest.raises(ValueError):
+    with raises(TypeError):
         abc = ABC([1,2,3], [1,2], [1,2,3,4])
 
+    abc = ABC([1,2], [1,2], [1,2])
+
+    np.testing.assert_array_equal(abc.data, np.array([[1,2], [1,2], [1,2]]).T)
+
 def test_init_kwargs():
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         abc = ABC(1,b=2,c=3)
 
     abc = ABC(a=1,b=2,c=3)
@@ -72,7 +87,7 @@ def test_init_kwargs():
     abc = ABC(data=np.ones((10,3)))
     np.testing.assert_array_equal(abc.data, np.ones((10,3)))
 
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         ABC(ggg=234342)
 
 def test_init_list_of_self():
@@ -80,7 +95,7 @@ def test_init_list_of_self():
     np.testing.assert_array_equal(abc.b, np.array([2,1,1,1,1]))
 
 def test_init_empty():
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         ABC()
 
 def test_init_df():
@@ -96,7 +111,7 @@ def test_attr():
         
     assert dir(abc) == a_b_c
 
-    with pytest.raises(AttributeError):
+    with raises(AttributeError):
         d = abc.d
 
 
@@ -114,7 +129,7 @@ def test_eq():
     assert ABC(np.ones((5,3))) == ABC(np.ones((5,3)))
 
     assert not ABC(np.zeros((5,3))) == ABC(np.ones((5,3)))
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         ABC(np.zeros((5,3))) == ABC(np.zeros((6,3)))
 
     assert ABC(1,2,4) == ABC(1.0, 2.0, 4.0)
@@ -167,3 +182,15 @@ def test_full():
 
     assert len(full) == 100
     assert full[50] == ABC(1,2,3)
+
+
+
+@mark.skip("not expected to work yet")
+def test_single_col():
+    class A(Base):
+        cols = ["a"]
+
+    assert A(1).data == np.array([[1]])
+
+
+    np.testing.assert_array_equal(A([1,2,3]).data, np.array([[1],[2],[3]]))

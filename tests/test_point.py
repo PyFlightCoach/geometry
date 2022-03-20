@@ -20,6 +20,17 @@ def test_cross():
     np.testing.assert_almost_equal(c.data[0,:], np.cross(a.data[0,:], b.data[0,:]))
     assert a.cross(b) == cross(a, b)
 
+def test_cross2():
+    a = Point(np.random.random((10, 3)))
+    b = Point(np.random.random((10, 3)))
+
+    c = a.cross(b)
+
+    c_check = np.array([np.cross(_a.data[0], _b.data[0]) for _a, _b in zip(a,b)])
+
+    np.testing.assert_array_almost_equal(c.data, c_check)
+
+
 def test_scale():
     assert Point(1,0,0).scale(5) == Point(5,0,0)
     assert Point(1,0,0).scale(5).data.shape == Point(5,0,0).data.shape

@@ -13,7 +13,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 from typing import Type, List
 import numpy as np
 import pandas as pd
-
+from numbers import Number
 
 class Base:
     __array_priority__ = 15.0   # this is a quirk of numpy so the __r*__ methods here take priority
@@ -41,10 +41,20 @@ class Base:
             
             elif isinstance(args[0], pd.DataFrame):
                 self.data = self.__class__._clean_data(np.array(args[0]))
-
+            else:
+                raise TypeError("unknown data passed")
+            
         elif len(args) == len(self.__class__.cols):
             #three args passed, each represents a col
-            self.data = self.__class__._clean_data(np.array(args).T)
+            if all(isinstance(arg, Number) for arg in args):
+                self.data = self.__class__._clean_data(np.array(args))
+            elif all(isinstance(arg, np.ndarray) for arg in args):
+                self.data = self.__class__._clean_data(np.array(args).T)
+            elif all(isinstance(arg, list) for arg in args):
+                self.data = self.__class__._clean_data(np.array(args).T)
+
+            else:
+                raise TypeError
         else:
             raise TypeError(f"Empty {self.__class__.__name__} not allowed")
 
@@ -52,18 +62,31 @@ class Base:
     def _clean_data(cls, data) -> np.ndarray:
         assert isinstance(data, np.ndarray)
         if data.dtype == 'O': 
-            raise ValueError('data must have homogeneous shape')
+            raise TypeError('data must have homogeneous shape')
         if len(data.shape) == 1:
             data = data.reshape(1, len(data))
         
         assert data.shape[1] == len(cls.cols)
         return data
 
-    
+    @classmethod
+    def type_check(cls,a):
+        return a if isinstance(a, cls) else cls(a)
+
+    @classmethod
+    def length_check(cls, a, b):
+        if len(a) == 1 and len(b) > 1:
+            a = a.__cls__.full(a, len(b))
+        elif len(b) == 1 and len(a) > 1:
+            b = b.__cls__.full(b, len(a))
+        elif len(a) > 1 and len(b) > 1 and not len(a) == len(b):
+            raise TypeError(f"lengths of passed arguments must be equal or 1, got {len(a)}, {len(b)}")
+        return a, b
+
     def __getattr__(self, name):
         if name in self.__class__.cols:
-            res = self.data[:,self.__class__.cols.index(name)]
-            return res[0] if len(res) == 1 else res
+            return self.data[:,self.__class__.cols.index(name)]
+            #return res[0] if len(res) == 1 else res
         elif name in self.__class__.from_np + self.__class__.from_np_base:
             return self.__class__(getattr(np, name)(self.data))
         raise AttributeError(f"Cannot get attribute {name}")
@@ -96,14 +119,13 @@ class Base:
             assert len(other) == 1 or len(other) == l
             return other.data
         else:
-            raise ValueError(f"unhandled other datatype ({other.__class__.name})")
+            raise ValueError(f"unhandled datatype ({other.__class__.name})")
 
     def count(self):
         return len(self)
 
     def __len__(self):
         return self.data.shape[0]
-
 
     def __eq__(self, other):
         return np.all(self.data==self._dprep(other))
@@ -152,10 +174,14 @@ class Base:
                  / \
                 np.tile(dt, (len(self.__class__.cols),1)).T)
 
-    def to_pandas(self, prefix='', suffix='', index=None):
+    def to_pandas(self, prefix='', suffix='', columns=None, index=None):
+        if not columns is None:
+            cols = columns
+        else:
+            cols = [prefix + col + suffix for col in self.__class__.cols]
         return pd.DataFrame(
             self.data, 
-            columns=[prefix + col + suffix for col in self.__class__.cols],
+            columns=cols,
             index=index
         )
 

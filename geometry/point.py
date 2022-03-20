@@ -137,12 +137,8 @@ def ppmeth(func):
 
 @ppmeth
 def cross(a, b) -> Point:
-    return Point(
-        a.y * b.z - a.z * b.y, 
-        a.z * b.x - a.x * b.z, 
-        a.x * b.y - a.y * b.x
-    )
-
+    return Point(np.cross(a.data, b.data))
+ 
 
 @ppmeth
 def cos_angle_between(a: Point, b: Point) -> np.ndarray:

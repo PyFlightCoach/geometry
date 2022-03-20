@@ -1,21 +1,37 @@
 import unittest
 from pytest import mark, approx, raises
 from geometry.quaternion import Quaternion
-from geometry.point import Point
+from geometry.point import Point, PX, PY, PZ, P0
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import quaternion
 
+
+
+def test_init():
+    data = np.random.random((500,4))
+    qs = Quaternion(data)
+    np.testing.assert_array_equal(data, qs.data)
 
 
 def test_mul():
-    q1 = Quaternion(np.random.random((100, 4))).norm()
-    q2 = Quaternion(np.random.random((100, 4))).norm()
+    q1 = Quaternion(np.random.random((2, 4))).norm()
+    q2 = Quaternion(np.random.random((2, 4))).norm()
 
-    # Quaternion * Quaternion
+    def npcheck(q1, q2):
+        res = np.quaternion(*q1.data[0]) * np.quaternion(*q2.data[0])
+        return np.array([res.w, res.x, res.y, res.z])
+
+    check = q1 * q2
+    check_npy=np.array([
+        npcheck(_1,_2) for _1, _2 in zip(q1, q2)
+    ])
+    
+    
     np.testing.assert_array_almost_equal(
-        (q1 * q2).xyzw,
-        np.array([(R.from_quat(_1.xyzw[0]) * R.from_quat(_2.xyzw[0])).as_quat() for _1, _2 in zip(q1, q2)]),
+        check.data,
+        check_npy,
         err_msg="failed to do Quaternions * Quaternions"
     )
 
@@ -30,42 +46,63 @@ def test_from_euler():
 
 
 def test_to_euler():
-    qarr = Quaternion(np.random.random((500, 4))).norm()
-
-    earr = [R.from_quat(q.xyzw[0]).as_euler("xyz") for q in qarr]
+    qarr = Quaternion(np.random.random((2, 4))).norm()
+    eulers = qarr.to_euler()
+    
+    checks = np.array([R.from_euler("xyz", eul.data[0]).as_quat() for eul in eulers])
+    
     np.testing.assert_array_almost_equal(
-        qarr.to_euler().data,
-        earr
+        checks,
+        qarr.xyzw
     )
 
-@mark.skip("not sure what this is in scipy")
+
 def test_norm():
-    qarr = Quaternion(np.random.random((500, 4)))
-    earr = [R.from_quat(q.xyzw[0]).as_quat() for q in qarr]
+    qarr = Quaternion(np.random.random( (2,4)))
+
+    def npcheck(q1):
+        res = np.quaternion(*q1.data[0]).normalized()
+        return np.array([res.w, res.x, res.y, res.z])    
+
+    earr = [npcheck(q) for q in qarr]
     np.testing.assert_array_almost_equal(
-        qarr.norm().xyzw,
+        qarr.norm().data,
         earr
     )
-@mark.skip("not sure if this exists either")
+
 def test_conjugate():
 
-    qarr = Quaternion(np.random.random((500, 4)))
-    earr = [R.from_quat(q.xyzw[0]).conjugate() for q in qarr]
+    qarr = Quaternion(np.random.random((6, 4))).norm()
+
+
+    def npcheck(q1):
+        res = np.quaternion(*q1.data[0]).conjugate()
+        return np.array([res.w, res.x, res.y, res.z])
+
+    earr = np.array([npcheck(q) for q in qarr])
     np.testing.assert_array_almost_equal(
-        qarr.conjugate().xyzw,
+        qarr.conjugate().data,
         earr
     )
 
 def test_inverse():
-    qarr = Quaternion(np.random.random((500, 4)))
-    earr = [R.from_quat(q.xyzw[0]).inv().as_quat() for q in qarr]
-    np.testing.assert_array_almost_equal(
-        -qarr.inverse().xyzw,  # TODO not sure why the - is needed
-        earr
-    )
+
+    q = Quaternion(1,0,0,0)
+    assert q.norm() == Quaternion(1,0,0,0)
+
+
+    def npcheck(q1):
+        res = np.quaternion(*q1.data[0]).inverse()
+        return np.array([res.w, res.x, res.y, res.z])
+
+    qarr = Quaternion(np.random.random((2, 4))).norm()
+
+    earr = [npcheck(q) for q in qarr]
+
+    np.testing.assert_array_almost_equal(qarr.inverse().data,earr)
 
 def test_body_diff():
-    qs = Quaternion.from_euler(Point.zeros(100))
+    qs = Quaternion.zero(100)
     qs = qs.body_rotate(Point.X(1, 100) * np.linspace(0,np.pi, 100))
     dt = np.ones(100)
     dq = qs.body_diff(dt)
@@ -76,9 +113,9 @@ def test_body_diff():
 
 
 def test_rotate():
-    q = Quaternion.from_euler(Point(0, 0, 0))
+    q = Quaternion.from_euler(P0())
     qdot = q.rotate(Point(0, 0, np.radians(5)))
-    assert qdot.transform_point(Point(1, 0, 0)).y[0] == approx(np.sin(np.radians(5)))
+    assert qdot.transform_point(PX()).y == approx(np.sin(np.radians(5)))
 
 def test_body_rotate():
     q = Quaternion.from_euler(Point(0, 0, np.pi / 2))
@@ -104,8 +141,8 @@ def test_to_from_axis_angle():
     )
 
 def test_to_axis_angle():
-    q1 = Quaternion.from_euler(Point(0,0,np.pi/4))
-    assert q1.to_axis_angle() == Point(0, 0, np.pi/4)
+    q1 = Quaternion.from_euler(PZ(np.pi/4))
+    assert q1.to_axis_angle() == PZ(np.pi/4)
 
 
 

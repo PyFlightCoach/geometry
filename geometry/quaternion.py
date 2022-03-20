@@ -15,14 +15,14 @@ from .base import Base
 from typing import Union, Tuple
 import numpy as np
 from warnings import warn
-
+from numbers import Number
 
 class Quaternion(Base):
     cols=["w", "x", "y", "z"]
 
     @staticmethod
     def zero(count=1):
-        return Quaternion(np.tile([count,0,0,0], (count,1)))
+        return Quaternion(np.tile([1,0,0,0], (count,1)))
 
     @property
     def xyzw(self):
@@ -43,60 +43,48 @@ class Quaternion(Base):
 
     def __mul__(self, other):
         if isinstance(other, Quaternion):
-            if not len(self) == len(other):
-                if len(self) == 1:
-                    return Quaternion.full(self, len(other)) * other
-                elif len(other) == 1:
-                    return self * Quaternion.full(other, len(self))
-            else:
-                w = self.w * other.w - self.axis.dot(other.axis)
-#
-                xyz = self.w * other.axis + other.w * self.axis + \
-                    self.axis.cross(other.axis)
+            a, b = Quaternion.length_check(self, Quaternion.type_check(other))
+            w = a.w * b.w - a.axis.dot(b.axis)
+            xyz = a.w * b.axis + b.w * a.axis + a.axis.cross(b.axis)
+            return Quaternion(np.column_stack([w, xyz.data]))
 
-                return Quaternion(np.column_stack([w, xyz.data]))
-        elif isinstance(other, float) or isinstance(other, int):
+        elif isinstance(other, Number):
             return Quaternion(self.data * other)
         elif isinstance(other, np.ndarray):
-            if other.ndim == 1:
-                if len(other) == len(self.cols):
-                    return self * Quaternion(self._dprep(other))
+            return Quaternions(self.data * self._dprep(other))
+                        
+        raise TypeError(f"cant multiply a quaternion by a {other.__class__.__name__}")
 
-        raise NotImplementedError(f"{other.__class__.__name__} {other} cannot be multiplied by this Quaternion")
-        
+    def __rmul__(self, other):
+        #either it should have been picked up by the left hand object or it should commute
+        return self * other   
+
     def transform_point(self, point: Point):
         '''Transform a point by the rotation described by self'''
+        a, b = Base.length_check(self, point)
+        
+        qdata = np.column_stack((np.zeros(len(a)), b.data))
 
-        if len(point) == len(self):
-            qdata = np.column_stack((np.zeros(len(self)), point.data))
-            return (self * Quaternion(qdata) * self.inverse()).axis
+        return (a * Quaternion(qdata) * a.inverse()).axis
 
-        if len(point) == 1 and len(self) > 1:
-            return self.transform_point(Point.full(point, len(self))) 
-
-
-        if len(self) == 1 and len(point) > 1:
-            return Quaternion.full(self, len(point)).transform_point(point)
-
-        else:
-            raise ValueError()
 
 
     @staticmethod
-    def from_euler(eul: Union[Point, Tuple[float, float, float]]):
-        if isinstance(eul, tuple):
-            eul = Point(*eul)
+    def from_euler(eul: Point):
+        eul = Point.type_check(eul)
         # xyz-fixed Euler angle convention: matches ArduPilot AP_Math/Quaternion::from_euler
         half = eul * 0.5
         c = half.cos
         s = half.sin
-        return Quaternion(
-            w=c.y * c.z * c.x + s.y * s.z * s.x,
-            x=c.y * c.z * s.x - s.y * s.z * c.x,
-            y=s.y * c.z * c.x + c.y * s.z * s.x,
-            z=c.y * s.z * c.x - s.y * c.z * s.x
-        )
 
+        return Quaternion(
+            np.array([
+                c.y * c.z * c.x + s.y * s.z * s.x,
+                c.y * c.z * s.x - s.y * s.z * c.x,
+                s.y * c.z * c.x + c.y * s.z * s.x,
+                c.y * s.z * c.x - s.y * c.z * s.x
+            ]).T
+        )
 
     def to_euler(self):
         # roll (x-axis rotation)
@@ -119,7 +107,7 @@ class Quaternion(Base):
             yaw[test] = np.zeros(len(sinp[test]))
 
             roll[test] = 2* np.arctan2(self.x[test],self.w[test])
-        return Point(np.array([roll, pitch, yaw]).T)
+        return Point(roll, pitch, yaw)
 
     @staticmethod
     def from_axis_angle(axangles: Point):
@@ -147,7 +135,7 @@ class Quaternion(Base):
         """to a point of axis angles. must be normalized first."""
         angle = 2 * np.arccos(self.w)
         s = np.sqrt(1 - self.w**2)
-        s[s < 1e-6] = 1.0
+        np.array(s)[np.array(s) < 1e-6] = 1.0
         return self.axis * angle / s
 
 
@@ -187,7 +175,7 @@ class Quaternion(Base):
             Quaternion(self.data[:-1, :]),
             Quaternion(self.data[1:, :])
         ) / dt[:-1]
-        return Point(np.vstack([ps.data, ps.data[-1,:]]))#.remove_outliers(2)  # Bodge to get rid of phase jump
+        return Point(np.vstack([ps.data, ps.data[-1,:]]))
 
     
     def to_rotation_matrix(self):
