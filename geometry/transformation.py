@@ -21,6 +21,9 @@ class Transformation(Base):
     def __init__(self, *args, **kwargs):
         if len(args) == len(kwargs) == 0:
             args = np.concatenate([P0().data,Q0().data],axis=1)
+        if len(args) == 2:
+            args = np.concatenate([args[0].data, args[1].data], axis=1)
+
         super().__init__(*args, **kwargs)
         self.p = Point(self.data[:,:3])
         self.q = Quaternion(self.data[:,3:])
