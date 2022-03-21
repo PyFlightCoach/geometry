@@ -206,3 +206,7 @@ class Base:
 
     def maxloc(self):
         return self.__class__(self.data.argmax(axis=0))
+
+
+    def cumsum(self):
+        return self.__class__(np.cumsum(self.data,axis=0))

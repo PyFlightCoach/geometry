@@ -63,6 +63,12 @@ class Transformation(Base):
             -q1 * q2
         )
 
+    def apply(self, oin: Union[Point, Quaternion]):
+        if isinstance(oin, Point):
+            return self.point(oin)
+        elif isinstance(oin, Quaternion):
+            return self.rotate(oin)
+
     def rotate(self, oin: Union[Point, Quaternion]):
         if isinstance(oin, Point):
             return self.q.transform_point(oin)
