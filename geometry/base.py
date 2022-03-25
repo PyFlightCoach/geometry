@@ -15,6 +15,9 @@ import numpy as np
 import pandas as pd
 from numbers import Number
 
+
+
+
 class Base:
     __array_priority__ = 15.0   # this is a quirk of numpy so the __r*__ methods here take priority
     cols=[]
@@ -83,6 +86,7 @@ class Base:
             raise TypeError(f"lengths of passed arguments must be equal or 1, got {len(a)}, {len(b)}")
         return a, b
 
+
     def __getattr__(self, name):
         if name in self.__class__.cols:
             return self.data[:,self.__class__.cols.index(name)]
@@ -98,28 +102,42 @@ class Base:
         return self.__class__(self.data[sli,:])
 
     def _dprep(self, other):        
-        arr = other.data if isinstance(other, Base) else other
         l , w = len(self), len(self.cols)
-        if isinstance(arr, np.ndarray):
-            if arr.shape == (l,w):
-                return arr
-            elif arr.shape == (l, 1) or arr.shape == (l,):
-                return np.tile(arr, (w,1)).T
-            elif arr.shape == (1, w) or arr.shape == (w,):
-                return np.tile(arr, (l,1))
-            elif arr.shape == (1,):
-                return np.full((l,w), arr[0])
-            elif l==1:
-                return arr
+
+        if isinstance(other, np.ndarray):
+            if other.shape == (l,w):
+                return other
+            elif other.shape == (l, 1) or other.shape == (l,) or l==1:
+                return np.tile(other, (w,1)).T
+            elif other.shape == (1,):
+                return np.full((l,w), other[0])
             else:
-                raise ValueError(f"array shape {arr.shape} not handled")
-        elif isinstance(arr, float) or isinstance(arr, int):
-            return np.full((l,w), arr)
+                raise ValueError(f"array shape {other.shape} not handled")
+        elif isinstance(other, float) or isinstance(other, int):
+            return np.full((l,w), other)
         elif isinstance(other, Base):
-            assert len(other) == 1 or len(other) == l
-            return other.data
+            a,b = self.__class__.length_check(self, other)
+            return self._dprep(b.data)
         else:
             raise ValueError(f"unhandled datatype ({other.__class__.name})")
+
+    @staticmethod
+    def dprep(func):
+        """this decorates a method that works on numpy arrays of shape equal to self.data. 
+            you can pass a nupy array or an instance of self.__class__. As long as the length
+            is the same as self, 1, or len(self) == 1 it should construct the arguments for the decorated function.
+        """
+        def wrapper(self, b):
+            bdat = self._dprep(b)
+            
+            if len(bdat) > 1 and len(self) == 1:
+                a = self.tile(len(bdat))
+            else:
+                a = self
+            return func(a, bdat)
+        
+        return wrapper
+
 
     def count(self):
         return len(self)
@@ -127,32 +145,41 @@ class Base:
     def __len__(self):
         return self.data.shape[0]
 
+    @dprep
     def __eq__(self, other):
-        return np.all(self.data==self._dprep(other))
+        return np.all(self.data == other)
 
+    @dprep
     def __add__(self, other):
-        return self.__class__(self.data + self._dprep(other))
+        return self.__class__(self.data + other)
     
+    @dprep
     def __radd__(self, other):
-        return self + other
+        return self.__class__(other + self.data)
 
+    @dprep
     def __sub__(self, other):
-        return self.__class__(self.data - self._dprep(other))
+        return self.__class__(self.data - other)
     
+    @dprep
     def __rsub__(self, other):
-        return self.__class__(self._dprep(other) - self.data)
+        return self.__class__(other - self.data)
 
+    @dprep
     def __mul__(self, other):
-        return self.__class__(self.data * self._dprep(other))
+        return self.__class__(self.data * other)
 
+    @dprep
     def __rmul__(self, other):
-        return self.__class__(self._dprep(other) * self.data)
+        return self.__class__(other * self.data)
 
+    @dprep
     def __rtruediv__(self, other):
-        return self.__class__(self._dprep(other) / self.data)
+        return self.__class__(other / self.data)
 
+    @dprep
     def __truediv__(self, other):
-        return self.__class__(self.data / self._dprep(other))
+        return self.__class__(self.data / other)
 
     def __str__(self):
         return str(pd.DataFrame(self.data, columns=self.__class__.cols))
@@ -163,9 +190,9 @@ class Base:
     def __neg__(self):
         return -1 * self
 
+    @dprep
     def dot(self, other):
-        return np.einsum('ij,ij->i', self.data, self._dprep(other))
-
+        return np.einsum('ij,ij->i', self.data, other)   
 
     def diff(self, dt:np.array):
         assert len(dt) == len(self)

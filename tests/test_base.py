@@ -31,10 +31,11 @@ def test__dprep():
     with raises(ValueError):
         ABC(np.ones((10,3)))._dprep(np.ones((5,3)))
 
-    np.testing.assert_array_equal(
-        ABC(np.ones((10,3)))._dprep(np.ones(3)), 
-        np.ones((10,3))
-    )
+    with raises(ValueError):
+        np.testing.assert_array_equal(
+            ABC(np.ones((10,3)))._dprep(np.ones(3)), 
+            np.ones((10,3))
+        )
 
     np.testing.assert_array_equal(
         ABC(np.ones((10,3)))._dprep(np.array([1])), 
@@ -127,7 +128,7 @@ def test_eq():
     assert ABC(np.ones((5,3))) == ABC(np.ones((5,3)))
 
     assert not ABC(np.zeros((5,3))) == ABC(np.ones((5,3)))
-    with raises(ValueError):
+    with raises(TypeError):
         ABC(np.zeros((5,3))) == ABC(np.zeros((6,3)))
 
     assert ABC(1,2,4) == ABC(1.0, 2.0, 4.0)
@@ -138,13 +139,13 @@ def test_add():
     assert ABC(1,2,3) + 1 == ABC(2,3,4)
     assert 1 + ABC(1,2,3) == ABC(2,3,4)
     assert ABC(1,2,3) + ABC(1,2,3) == ABC(2,4,6)
-    assert ABC(1,1,1) + np.ones((10,3)) == ABC(np.full((10,3), 2))
+    assert ABC(1,1,1) + np.ones(10) == ABC(np.full((10,3), 2))
 
 def test_mul():
     assert ABC(1,2,3) * 2 == ABC(2,4,6)
     assert 2 * ABC(1,2,3) == ABC(2,4,6)
     assert ABC(1,2,3) * ABC(1,2,3) == ABC(1,4,9)
-    assert ABC(2,2,2) * np.ones((10,3)) == ABC(np.full((10,3), 2))
+    assert ABC(2,2,2) * np.ones(10) == ABC(np.full((10,3), 2))
 
     a = ABC(1,1,1) * np.array([2])
     b = np.array([2]) * ABC(1,1,1)
@@ -152,6 +153,7 @@ def test_mul():
 
     assert ABC(1,1,1).tile(10) * np.ones(10) == ABC(np.ones((10,3)))
 
+    assert ABC(1,2,3) * np.full(5, 2) == ABC(2,4,6).tile(5)
 
 
 def test_div():
