@@ -107,10 +107,17 @@ class Base:
         if isinstance(other, np.ndarray):
             if other.shape == (l,w):
                 return other
-            elif other.shape == (l, 1) or other.shape == (l,) or l==1:
+            elif other.shape == (l, 1) or other.shape == (l,):
                 return np.tile(other, (w,1)).T
             elif other.shape == (1,):
                 return np.full((l,w), other[0])
+            elif l==1:
+                if len(other.shape) == 1:
+                    return np.tile(other, (w,1)).T
+                elif other.shape[1] == w:
+                    return other
+                else:
+                    raise ValueError(f"array shape {other.shape} not handled")    
             else:
                 raise ValueError(f"array shape {other.shape} not handled")
         elif isinstance(other, float) or isinstance(other, int):
@@ -188,7 +195,7 @@ class Base:
         return np.linalg.norm(self.data, axis=1)
 
     def __neg__(self):
-        return -1 * self
+        return self.__class__(-self.data)
 
     @dprep
     def dot(self, other):

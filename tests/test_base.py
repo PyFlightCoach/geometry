@@ -155,6 +155,8 @@ def test_mul():
 
     assert ABC(1,2,3) * np.full(5, 2) == ABC(2,4,6).tile(5)
 
+    assert ABC(1,2,3) * ABC(2,2,2).tile(10) == ABC(2,4, 6).tile(10)
+
 
 def test_div():
     assert ABC(1,2,3) / 2 == ABC(0.5,1,1.5)
