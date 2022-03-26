@@ -16,6 +16,21 @@ import pandas as pd
 from numbers import Number
 
 
+def dprep(func):
+    """this decorates a method that works on numpy arrays of shape equal to self.data. 
+        you can pass a nupy array or an instance of self.__class__. As long as the length
+        is the same as self, 1, or len(self) == 1 it should construct the arguments for the decorated function.
+    """
+    def wrapper(self, b):
+        bdat = self._dprep(b)
+        
+        if len(bdat) > 1 and len(self) == 1:
+            a = self.tile(len(bdat))
+        else:
+            a = self
+        return func(a, bdat)
+    
+    return wrapper
 
 
 class Base:
@@ -128,22 +143,7 @@ class Base:
         else:
             raise ValueError(f"unhandled datatype ({other.__class__.name})")
 
-    @staticmethod
-    def dprep(func):
-        """this decorates a method that works on numpy arrays of shape equal to self.data. 
-            you can pass a nupy array or an instance of self.__class__. As long as the length
-            is the same as self, 1, or len(self) == 1 it should construct the arguments for the decorated function.
-        """
-        def wrapper(self, b):
-            bdat = self._dprep(b)
-            
-            if len(bdat) > 1 and len(self) == 1:
-                a = self.tile(len(bdat))
-            else:
-                a = self
-            return func(a, bdat)
-        
-        return wrapper
+
 
 
     def count(self):
