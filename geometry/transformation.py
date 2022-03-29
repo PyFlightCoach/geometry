@@ -28,6 +28,9 @@ class Transformation(Base):
         self.p = Point(self.data[:,:3])
         self.q = Quaternion(self.data[:,3:])
     
+    def offset(self, p: Point):
+        return Transformation(self.p + p, self.q)
+
     @staticmethod
     def build(p:Point, q:Quaternion):
         if len(p) == len(q):
