@@ -55,7 +55,7 @@ class Point(Base):
         return Point(np.min(self.data, axis=0))
 
     def angles(self, p2):
-        return (self.cross(p2) / (abs(self) * abs(p2))).asines()
+        return (self.cross(p2) / (abs(self) * abs(p2))).arcsin
     
     def angle(self, p2):
         return abs(Point.angles(self, p2))

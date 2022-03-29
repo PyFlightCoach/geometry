@@ -39,9 +39,9 @@ class Transformation(Base):
                 q.data
             ],axis=1))
         elif len(p) == 1 and len(q) > 1:
-            return Transformation.build(Point.full(p, len(q)), q)
+            return Transformation.build(p.tile(len(q)), q)
         elif len(p) > 1 and len(q) >= 1:
-            return Transformation.build(p, Point.full(q, len(p)))
+            return Transformation.build(q.tile(len(p)))
         else:
             raise ValueError("incompatible lengths")
 
