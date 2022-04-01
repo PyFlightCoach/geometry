@@ -101,6 +101,9 @@ class Base:
             raise TypeError(f"lengths of passed arguments must be equal or 1, got {len(a)}, {len(b)}")
         return a, b
 
+    @classmethod
+    def concatenate(cls, items):
+        return cls(np.concatenate(items, axis=0))
 
     def __getattr__(self, name):
         if name in self.__class__.cols:
