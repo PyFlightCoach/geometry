@@ -103,7 +103,7 @@ class Base:
 
     @classmethod
     def concatenate(cls, items):
-        return cls(np.concatenate(items, axis=0))
+        return cls(np.concatenate([i.data for i in items], axis=0))
 
     def __getattr__(self, name):
         if name in self.__class__.cols:

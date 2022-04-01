@@ -196,3 +196,13 @@ def test_single_col():
 
 
     np.testing.assert_array_equal(A([1,2,3]).data, np.array([[1],[2],[3]]))
+
+
+def test_concatenate():
+    a = ABC.full(ABC(1,2,3), 10)
+    b = ABC.full(ABC(4,5,6), 10)
+    c=ABC.concatenate([a,b])
+
+    assert len(c) == len(a) + len(b) 
+    np.testing.assert_array_equal(c.a, np.concatenate([a.a, b.a], axis=0))
+
