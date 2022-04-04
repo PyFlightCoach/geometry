@@ -53,7 +53,7 @@ class GPS(Base):
         assert isinstance(other, GPS)
         if len(other) == len(self):
             return Point(
-                (other.lat - self.lat) * LOCFAC,
+                -(other.lat - self.lat) * LOCFAC,
                 -(other.long - self.long) * LOCFAC * self._longfac,
                 np.zeros(len(self))
             )
@@ -73,7 +73,7 @@ class GPS(Base):
         if not len(pin) == len(self):
             raise ValueError(f"incompatible lengths for offset ({len(self)}) - ({len(pin)})")
 
-        latb = self.lat - pin.x / LOCFAC
+        latb = self.lat + pin.x / LOCFAC
         return GPS(
             latb,
             self.long + pin.y / (LOCFAC * safecos(latb))
