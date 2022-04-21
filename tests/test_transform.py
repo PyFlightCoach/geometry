@@ -53,3 +53,12 @@ def test_rotate():
         Point(-1, -1, 0)
     )
 
+
+
+def test_to_matrix():
+    np.testing.assert_array_equal(
+        Transformation().to_matrix(), 
+        np.identity(4).reshape(1,4,4)
+    )
+
+    

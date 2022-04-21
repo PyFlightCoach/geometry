@@ -86,3 +86,11 @@ class Transformation(Base):
 
     def coord(self, coord):
         return coord.translate(self.p).rotate(self.q.to_rotation_matrix())
+
+
+    def to_matrix(self):
+        outarr = np.identity(4).reshape(1,4,4)
+        outarr[:, :3,:3] = self.rotation.to_rotation_matrix()
+        outarr[:, 3,:3] = self.translation.data
+        return outarr
+        
