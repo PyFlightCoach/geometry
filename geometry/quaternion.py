@@ -16,7 +16,7 @@ from typing import Union, Tuple
 import numpy as np
 from warnings import warn
 from numbers import Number
-from geometry.rotation_matrix import RotationMatrix
+
 
 
 class Quaternion(Base):
