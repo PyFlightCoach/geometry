@@ -226,7 +226,10 @@ class Base:
         return self.__class__(np.tile(self.data, (count, 1)))
 
     def to_dict(self):
-        return {key: getattr(self, key) for key in self.cols}
+        if len(self) == 1:
+            return {key: getattr(self, key)[0] for key in self.cols}
+        else:
+            return {key: getattr(self, key) for key in self.cols}
 
     @classmethod
     def full(cls, val, count):
