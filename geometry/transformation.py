@@ -71,6 +71,8 @@ class Transformation(Base):
             return self.point(oin)
         elif isinstance(oin, Quaternion):
             return self.rotate(oin)
+        elif isinstance(oin, self.__class__):
+            return Transformation(self.apply(oin.p), self.apply(oin.q))
 
     def rotate(self, oin: Union[Point, Quaternion]):
         if isinstance(oin, Point):
