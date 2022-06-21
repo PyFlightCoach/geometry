@@ -9,20 +9,14 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from .point import Point, cross_product, dot_product, cos_angle_between, scalar_projection,vector_projection
-from .points import Points
-from .gps import GPSPosition
+from .point import *
+from .quaternion import *
+from .gps import GPS
 from .coordinate_frame import Coord
-from .quaternion import Quaternion
-from .quaternions import Quaternions
 from .transformation import Transformation
-from .line import Line
+from .mass import Mass
 
 
-def Euler(*args):
-    if len(args)==3:
-        return Quaternion.from_euler(Point(*args))
-    if len(args)==1:
-        if isinstance(args[0], Points):
-            return Quaternions.from_euler(args[0])
-    raise NotImplementedError
+def Euler(*args, **kwargs):
+    return Quaternion.from_euler(Point(*args, **kwargs))
+    

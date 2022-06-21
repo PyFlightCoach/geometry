@@ -1,13 +1,35 @@
-from geometry import Point, Quaternion, Coord, Points, Quaternions
+"""
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <http://www.gnu.org/licenses/>.
+"""
+from geometry import Base, Point, Quaternion, Point, P0, Q0, Coord
 
 import numpy as np
 from typing import Union
 
 
-class Transformation():
-    def __init__(self, translation: Point=Point(0.0,0.0,0.0), rotation: Quaternion=Quaternion(1.0,0.0,0.0,0.0)):
-        self.translation = translation
-        self.rotation = rotation
+class Transformation(Base):
+    cols = ["x", "y", "z", "rw", "rx", "ry", "rz"]
+
+    def __init__(self, *args, **kwargs):
+        if len(args) == len(kwargs) == 0:
+            args = np.concatenate([P0().data,Q0().data],axis=1)
+        if len(args) == 2:
+            args = np.concatenate([args[0].data, args[1].data], axis=1)
+
+        super().__init__(*args, **kwargs)
+        self.p = Point(self.data[:,:3])
+        self.q = Quaternion(self.data[:,3:])
+    
+    def offset(self, p: Point):
+        return Transformation(self.p + p, self.q)
 
 
     def __getattr__(self, name):
@@ -20,44 +42,67 @@ class Transformation():
 
 
     @staticmethod
-    def from_coords(coord_a: Coord, coord_b: Coord):
-        return Transformation(
-            coord_b.origin - coord_a.origin,
-            Quaternion.from_rotation_matrix(
-                np.dot(
-                    coord_b.inverse_rotation_matrix,
-                    coord_a.rotation_matrix
-                ))
-        )
-
-    def rotate(self, point: Union[Point, Points]):
-        if isinstance(point, Point):
-            return self.rotation.transform_point(point)
-        elif isinstance(point, Points):
-            return Quaternions.from_quaternion(self.rotation, point.count).transform_point(point)
+    def build(p:Point, q:Quaternion):
+        if len(p) == len(q):
+            return Transformation(np.concatenate([
+                p.data,
+                q.data
+            ],axis=1))
+        elif len(p) == 1 and len(q) > 1:
+            return Transformation.build(p.tile(len(q)), q)
+        elif len(p) > 1 and len(q) >= 1:
+            return Transformation.build(q.tile(len(p)))
         else:
-            return NotImplemented
+            raise ValueError("incompatible lengths")
 
-    def translate(self, point: Union[Point, Points]):
-        return point + self.translation
+    @staticmethod
+    def zero(count):
+        return Transformation.build(P0(count), Q0(count))
 
-    def point(self, point: Union[Point, Points]):
-        return self.translate(self.rotate(point))
+    @property
+    def translation(self) -> Point:
+        return self.p
 
-    def quat(self, quat: Union[Quaternion, Quaternions]):
-        return self.rotation * quat
+    @property
+    def rotation(self) -> Quaternion:
+        return self.q
 
-    def coord(self, coord: Coord = Coord.from_nothing()):
-        return coord.translate(self.translation).rotate(
-            self.rotation.to_rotation_matrix()
+    @staticmethod
+    def from_coords(coord_a, coord_b):
+        q1 = Quaternion.from_rotation_matrix(coord_b.rotation_matrix()).inverse()
+        q2 = Quaternion.from_rotation_matrix(coord_a.rotation_matrix())
+        return Transformation.build(
+            coord_b.origin - coord_a.origin,
+            -q1 * q2
         )
 
-    def __mul__(self, other: float):
-        return Transformation(self.translation * other, self.rotation)
+    def apply(self, oin: Union[Point, Quaternion]):
+        if isinstance(oin, Point):
+            return self.point(oin)
+        elif isinstance(oin, Quaternion):
+            return self.rotate(oin)
+        elif isinstance(oin, self.__class__):
+            return Transformation(self.apply(oin.p), self.apply(oin.q))
+
+    def rotate(self, oin: Union[Point, Quaternion]):
+        if isinstance(oin, Point):
+            return self.q.transform_point(oin)
+        elif isinstance(oin, Quaternion):
+            return self.q * oin
+
+    def translate(self, point: Point):
+        return point + self.p
+
+    def point(self, point: Point):
+        return self.translate(self.rotate(point))       
+
+    def coord(self, coord):
+        return coord.translate(self.p).rotate(self.q.to_rotation_matrix())
 
 
     def to_matrix(self):
-        outarr = np.identity(4)
-        outarr[:3,:3] = self.rotation.to_rotation_matrix()
-        outarr[3,:3] = self.translation.to_list()
+        outarr = np.identity(4).reshape(1,4,4)
+        outarr[:, :3,:3] = self.rotation.to_rotation_matrix()
+        outarr[:, 3,:3] = self.translation.data
         return outarr
+        

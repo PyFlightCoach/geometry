@@ -9,278 +9,185 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from math import pi, sqrt, acos
+from .base import Base
 import numpy as np
-from typing import List
-from numbers import Number
-from typing import List, Union, Dict
+import pandas as pd
+from typing import List 
+from warnings import warn
 
 
-class Point(object):
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
-    def __iter__(self):
-        for i in [self.x, self.y, self.z]:
-            yield i
-
-    def to_list(self):
-        """can be deprecated, instead use list()"""
-        return [self.x, self.y, self.z]
-
-    def to_tuple(self):
-        """can be deprecated, instead use tuple()"""
-        return(self.x, self.y, self.z)
-
-    def to_dict(self, prefix=''):
-        return {prefix+'x': self.x, prefix+'y': self.y, prefix+'z': self.z}
-
-    @staticmethod
-    def from_dict(value: dict):
-        value = {key[-1]: value for key, value in value.items()}
-        return Point(value['x'], value['y'], value['z'])
-
-    def __str__(self):
-        return "X:{x:.2f},Y:{y:.2f},Z:{z:.2f}".format(x=self.x, y=self.y, z=self.z)
-
-    def __abs__(self):
-        return sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
-
-    def __add__(self, other):
-        if isinstance(other, Point):
-            return Point(
-                x=self.x + other.x,
-                y=self.y + other.y,
-                z=self.z + other.z
-            )
-        elif isinstance(other, Number):
-            return Point(
-                x=self.x + other,
-                y=self.y + other,
-                z=self.z + other
-            )
-        else:
-            return NotImplemented
-
-    def __sub__(self, other):
-        if isinstance(other, Point):
-            return Point(
-                x=self.x - other.x,
-                y=self.y - other.y,
-                z=self.z - other.z
-            )
-        elif isinstance(other, Number):
-            return Point(
-                x=self.x - other,
-                y=self.y - other,
-                z=self.z - other
-            )
-        else:
-            return NotImplementedError
-
-    def __eq__(self, other):
-        if isinstance(other, Point):
-            return (other.x == self.x) and (other.y == self.y) and (other.z == self.z)
-        else:
-            try:
-                return (other == self.x) and (other == self.y) and (other == self.z)
-            finally:
-                return False
-
-    # TODO Point * list -> Points
-    def __mul__(self, other):
-        if isinstance(other, Point):
-            return Point(x=other.x * self.x, y=other.y * self.y, z=other.z * self.z)
-        elif isinstance(other, Number):
-            return Point(x=other * self.x, y=other * self.y, z=other * self.z)
-        else:
-            return NotImplemented
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
-        
-
-    def __truediv__(self, other):
-        if isinstance(other, Point):
-            return Point(self.x / other.x, self.y / other.y, self.z / other.z)
-        elif isinstance(other, Number):
-            return Point(self.x / other, self.y / other, self.z / other)
-        else:
-            return NotImplemented
-
-    def __lt__(self, other):
-        if isinstance(other, Point):
-            return abs(self) < abs(other)
-        else:
-            return NotImplemented
-
-    def __gt__(self, other):
-        if isinstance(other, Point):
-            return abs(self) > abs(other)
-        else:
-            return NotImplemented
-
-    def __neg__(self):
-        return -1 * self
+class Point(Base):
+    cols=["x", "y", "z"]
+    from_np = [
+        "sin","cos","tan",
+        "arcsin","arccos","arctan",
+    ]
 
     def scale(self, value):
-        return self.__mul__(value / self.__abs__())
-
-    def is_equal(self, tolerance=0):
-        if abs(self.x - self.y) > tolerance:
-            return False
-        if abs(self.x - self.z) > tolerance:
-            return False
-        return True
-
+        a, b=value, abs(self)
+        res = a/b
+        res[b==0] = 0
+        res = self * res
+        
+        return res
+        
     def unit(self):
         return self.scale(1)
 
-    @property
-    def cosines(self):
-        return Point(x=np.cos(self.x), y=np.cos(self.y), z=np.cos(self.z))
+    def remove_outliers(self, nstds = 2):
+        ab = abs(self)
+        std = np.nanstd(ab)
+        mean = np.nanmean(ab)
 
-    @property
-    def sines(self):
-        return Point(x=np.sin(self.x), y=np.sin(self.y), z=np.sin(self.z))
+        data = self.data.copy()
 
-    @property
-    def acosines(self):
-        return Point(x=np.arccos(self.x), y=np.arccos(self.y), z=np.arccos(self.z))
+        data[abs(ab - mean) > nstds * std, :] = [np.nan, np.nan, np.nan]
 
-    @property
-    def asines(self):
-        return Point(x=np.arcsin(self.x), y=np.arcsin(self.y), z=np.arcsin(self.z))
+        return Point(pd.DataFrame(data).fillna(method="ffill").to_numpy())
 
-    def rotate(self, rotation_matrix=List[List[float]]):
-        return Point(
-            self.x * rotation_matrix[0][0] + self.y *
-            rotation_matrix[0][1] + self.z * rotation_matrix[0][2],
-            self.x * rotation_matrix[1][0] + self.y *
-            rotation_matrix[1][1] + self.z * rotation_matrix[1][2],
-            self.x * rotation_matrix[2][0] + self.y *
-            rotation_matrix[2][1] + self.z * rotation_matrix[2][2],
-        )
+    def mean(self):
+        return Point(np.mean(self.data, axis=0))
 
-    def unit_cost(self, other):
-        return abs(self - other)
+    def max(self):
+        return Point(np.max(self.data, axis=0))
+    
+    def min(self):
+        return Point(np.min(self.data, axis=0))
+
+    def angles(self, p2):
+        return (self.cross(p2) / (abs(self) * abs(p2))).arcsin
+    
+    def angle(self, p2):
+        return abs(Point.angles(self, p2))
+    
+    @staticmethod
+    def X(value=1, count=1):
+        return Point(np.tile([value,0,0], (count, 1)))
+
+    @staticmethod
+    def Y(value=1, count=1):
+        return Point(np.tile([0,value,0], (count, 1)))
+
+    @staticmethod
+    def Z(value=1, count=1):
+        return Point(np.tile([0,0,value], (count, 1)))
+
+    def rotate(self, rmat=np.ndarray):
+        if len(rmat.shape) == 3:
+            pass
+        elif len(rmat.shape) == 2:
+            rmat = np.reshape(rmat, (1, 3, 3 ))
+        else:
+            raise TypeError("expected a 3x3 matrix")
+        
+        return self.dot(rmat)
 
     def to_rotation_matrix(self):
-        '''returns the rotation matrix based on apoint representing Euler angles'''
-        s = self.sines
-        c = self.cosines
-        return [
-            [c.z * c.y, c.z * s.y * s.x - c.x * s.z, c.x * c.z * s.y + s.x * s.z],
-            [c.y * s.z, c.x * c.z + s.x * s.y *
-                s.z, -1 * c.z * s.x + c.x * s.y * s.z],
-            [-1 * s.y, c.y * s.x, c.x * c.y]
-        ]
+        '''returns the rotation matrix based on a point representing Euler angles'''
+        s = self.sin
+        c = self.cos
+        return np.array([
+            [
+                c.z * c.y, 
+                c.z * s.y * s.x - c.x * s.z, 
+                c.x * c.z * s.y + s.x * s.z
+            ], [
+                c.y * s.z, 
+                c.x * c.z + s.x * s.y * s.z, 
+                -1 * c.z * s.x + c.x * s.y * s.z
+            ],
+            [
+                -1 * s.y, 
+                c.y * s.x, 
+                c.x * c.y
+            ]
+        ]).T
 
     @staticmethod
-    def X(mag: float = 1.0):
-        return Point(mag, 0.0, 0.0)
-        
-    @staticmethod
-    def Y(mag: float = 1.0):
-        return Point(0.0, mag, 0.0)
+    def zeros(count=1):
+        return Point(np.zeros((count,3)))
 
-    @staticmethod
-    def Z(mag: float = 1.0):
-        return Point(0.0, 0.0, mag)
-
-    @staticmethod
-    def XYZ(mag: float = 0.0):
-        return Point(mag, mag, mag)
-
-    @staticmethod
-    def zeros():
-        return Point(0.0,0.0,0.0)
-
-def dot_product(p1: Point, p2: Point):
-    return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z
+def Points(*args, **kwargs):
+    warn("Points is deprecated, you can now just use Point", DeprecationWarning)
+    return Point(*args, **kwargs)
 
 
-def cos_angle_between(p1: Point, p2: Point):
-    raisezero([p1, p2])
-    return dot_product(p1.unit(), p2.unit())
+def PX(length=1, count=1):
+    return Point.X(length, count)
+
+def PY(length=1, count=1):
+    return Point.Y(length, count)
+
+def PZ(length=1, count=1):
+    return Point.Z(length, count)
+
+def P0(count=1):
+    return Point.zeros(count)
+
+def ppmeth(func):
+    def wrapper(a, b, *args, **kwargs):
+        assert all([isinstance(arg, Point) for arg in args])
+        assert len(a) == len(b) or len(a) == 1 or len(b) == 1
+        return func(a, b, *args, **kwargs)
+
+    setattr(Point, func.__name__, wrapper)
+    return wrapper
 
 
-def cross_product(p1: Point, p2: Point) -> Point:
-    return Point(
-        x=p1.y * p2.z - p1.z * p2.y,
-        y=p1.z * p2.x - p1.x * p2.z,
-        z=p1.x * p2.y - p1.y * p2.x
-    )
+@ppmeth
+def cross(a, b) -> Point:
+    return Point(np.cross(a.data, b.data))
+ 
+
+@ppmeth
+def cos_angle_between(a: Point, b: Point) -> np.ndarray:
+    if a == 0 or b == 0:
+        raise ValueError("cannot measure the angle to a zero length vector")
+    return a.unit().dot(b.unit())
 
 
-def scalar_projection(from_vec: Point, to_vec: Point):
-    try:
-        return cos_angle_between(from_vec, to_vec) * abs(from_vec)
-    except ValueError:
+@ppmeth
+def angle_between(a: Point, b: Point) -> np.ndarray:
+    return np.arccos(a.cos_angle_between(b))
+
+@ppmeth
+def scalar_projection(a: Point, b: Point) -> Point:
+    if a==0 or b==0:
         return 0
+    return a.cos_angle_between(b) * abs(a)
 
+@ppmeth
+def vector_projection(a: Point, b: Point) -> Point:
+    if abs(a) == 0:
+        return Point.zeros()
+    return b.scale(a.scalar_projection(b))
 
-def vector_projection(from_vec: Point, to_vec: Point) -> Point:
-    if abs(from_vec) == 0:
-        return Point(0, 0, 0)
-    return to_vec.scale(scalar_projection(from_vec, to_vec))
-
-
-def is_parallel(p1: Point, p2: Point, tolerance=0.000001):
-    raisezero([p1, p2])
-    if p1 == p2:
+@ppmeth
+def is_parallel(a: Point, b: Point, tolerance=1e-6):
+    if a.unit() == b.unit():
         return True
-    return abs(abs(cos_angle_between(p1, p2)) - 1) < tolerance
+    return abs(a.cos_angle_between(b) - 1) < tolerance
 
+@ppmeth
+def is_perpendicular(a: Point, b: Point, tolerance=1e-6):
+    return abs(a.dot(b)) < tolerance
 
-def is_anti_parallel(p1: Point, p2: Point, tolerance=0.000001):
-    raisezero([p1, p2])
-    if p1 == - p2:
-        return True
-    return abs(cos_angle_between(p1, p2) + 1) < tolerance
-
-
-def is_perpendicular(p1: Point, p2: Point, tolerance=0.000001):
-    raisezero([p1, p2])
-    return abs(dot_product(p1, p2)) < tolerance
-
-
+@ppmeth
 def min_angle_between(p1: Point, p2: Point):
-    raisezero([p1, p2])
-    angle = angle_between(p1, p2) % pi
-    return min(angle, pi - angle)
+    angle = angle_between(p1, p2) % np.pi
+    return min(angle, np.pi - angle)
 
-
-def angle_between(p1: Point, p2: Point):
-    raisezero([p1, p2])
-    return acos(cos_angle_between(p1, p2))
-
+@ppmeth
+def angle_between(a: Point, b: Point) -> float: 
+    return np.arccos(cos_angle_between(a, b))
 
 def arbitrary_perpendicular(v: Point) -> Point:
-    raisezero(v)
     if v.x == 0 and v.y == 0:
         return Point(0, 1, 0)
     return Point(-v.y, v.x, 0).unit
-
-
-def raisezero(points: Union[Point, List[Point]]):
-    if isinstance(points, Point):
-        _raisezero(points)
-    else:
-        for point in points:
-            _raisezero(point)
-
-
-def _raisezero(point: Point, tolerance=0.000001):
-    if abs(point) < tolerance:
-        raise ValueError('magnitude less than tolerance')
 
 def vector_norm(point: Point):
     return abs(point)
 
 def normalize_vector(point: Point):
-    raisezero(point)
     return point / abs(point)
-
