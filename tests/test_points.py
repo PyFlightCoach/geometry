@@ -5,7 +5,7 @@ from geometry.points import Points
 import numpy as np
 import pandas as pd
 
-from geometry import Point, dot_product, cross_product
+from geometry import Point
 
 
 class TestPoints(unittest.TestCase):
