@@ -20,3 +20,6 @@ from .mass import Mass
 def Euler(*args, **kwargs):
     return Quaternion.from_euler(Point(*args, **kwargs))
     
+
+def Euldeg(*args, **kwargs):
+    return Quaternion.from_euler(Point(*args, **kwargs).radians())

@@ -146,6 +146,11 @@ class Base:
         else:
             raise ValueError(f"unhandled datatype ({other.__class__.name})")
 
+    def radians(self):
+        return self.__class__(np.radians(self.data))
+
+    def degrees(self):
+        return self.__class__(np.degrees(self.data))
 
 
 
@@ -250,3 +255,6 @@ class Base:
 
     def cumsum(self):
         return self.__class__(np.cumsum(self.data,axis=0))
+
+    def round(self, decimals=0):
+        return self.__class__(self.data.round(decimals))

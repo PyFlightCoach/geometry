@@ -2,6 +2,7 @@ import unittest
 from pytest import mark, approx, raises
 from geometry.quaternion import Quaternion
 from geometry.point import Point, PX, PY, PZ, P0
+from geometry import Euler, Euldeg
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -182,6 +183,28 @@ def test_from_rotation_matrix():
         Quaternion.from_rotation_matrix(np.identity(3)).data[0], 
         Quaternion.zero().data[0]
     )
+
+
+def test_closest_principal():
+    np.testing.assert_array_almost_equal(
+        Euldeg(
+           np.array( [
+                [0, 95, 95],
+                [20, 10, 30],
+                [91, 1, 40],
+            ])
+        ).closest_principal().data,
+        Euldeg(
+            np.array([
+                [0, 90, 90],
+                [0, 0, 0],
+                [90, 0, 0],
+            ])
+        ).data
+    )
+
+    
+
    # rmats = np.array([
    #     np.identity(3),
    #     Point(1, 1, 0).to_rotation_matrix()[0],
