@@ -87,6 +87,7 @@ class Quaternion(Base):
         )
 
     def to_euler(self):
+        
         # roll (x-axis rotation)
         sinr_cosp = 2 * (self.w * self.x + self.y * self.z)
         cosr_cosp = 1 - 2 * (self.x * self.x + self.y * self.y)

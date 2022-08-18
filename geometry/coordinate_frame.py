@@ -82,6 +82,9 @@ class Coord(Base):
     def translate(self, point):
         return Coord.from_axes(self.origin + point, self.x_axis, self.y_axis, self.z_axis)
 
+    def axes(self):
+        return Point.concatenate([self.x_axis, self.y_axis, self.z_axis])
+
     def get_plot_df(self, length=10):
         def make_ax(ax: Point, colour: str):
             return [

@@ -23,7 +23,6 @@ class Transformation(Base):
             args = np.concatenate([P0().data,Q0().data],axis=1)
         if len(args) == 2:
             args = np.concatenate([args[0].data, args[1].data], axis=1)
-
         super().__init__(*args, **kwargs)
         self.p = Point(self.data[:,:3])
         self.q = Quaternion(self.data[:,3:])
@@ -35,9 +34,13 @@ class Transformation(Base):
     def __getattr__(self, name):
         if name in list("xyz"):
             return getattr(self.translation, name)
-        if len(name) == 2 and name[0] == "r":
+        elif len(name) == 2 and name[0] == "r":
             if name[1] in list("wxyz"):
                 return getattr(self.rotation, name[1])
+        elif name=="pos":
+            return self.translation
+        elif name=="att":
+            return self.rotation
         raise AttributeError(name)
 
 
@@ -66,6 +69,10 @@ class Transformation(Base):
     @property
     def rotation(self) -> Quaternion:
         return self.q
+
+    @staticmethod
+    def from_coord(coord: Coord):
+        return Transformation.from_coords(Coord.from_nothing(), coord)
 
     @staticmethod
     def from_coords(coord_a, coord_b):
