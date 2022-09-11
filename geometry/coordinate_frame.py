@@ -84,20 +84,3 @@ class Coord(Base):
 
     def axes(self):
         return Point.concatenate([self.x_axis, self.y_axis, self.z_axis])
-
-    def get_plot_df(self, length=10):
-        def make_ax(ax: Point, colour: str):
-            return [
-                self.origin.data + [colour],
-                self.origin.data + ax * length + [colour],
-                self.origin.data + [colour]
-            ]
-
-        axes = []
-        for ax, col in zip(self.axes, ['red', 'blue', 'green']):
-            axes += make_ax(ax, col)
-
-        return pd.DataFrame(
-            axes,
-            columns=list('xyzc')
-        )

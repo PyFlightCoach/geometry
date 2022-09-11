@@ -23,3 +23,15 @@ def Euler(*args, **kwargs):
 
 def Euldeg(*args, **kwargs):
     return Quaternion.from_euler(Point(*args, **kwargs).radians())
+
+
+def angle_diff(a, b): 
+    d1 = a - b
+    d2 = d1 - 2 * np.pi
+    bd=np.abs(d2) < np.abs(d1)
+    d1[bd] = d2[bd]
+    d3 = d1 + 2 * np.pi
+    bd=np.abs(d3) < np.abs(d1)
+    d1[bd] = d3[bd]
+
+    return d1
