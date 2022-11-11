@@ -59,7 +59,7 @@ class Transformation(Base):
             raise ValueError("incompatible lengths")
 
     @staticmethod
-    def zero(count):
+    def zero(count=1):
         return Transformation.build(P0(count), Q0(count))
 
     @property
