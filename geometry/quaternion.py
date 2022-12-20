@@ -225,6 +225,9 @@ class Quaternion(Base):
         rads = eul * (2 / np.pi)
         return Quaternion.from_euler(rads.round(0) * np.pi/2)
 
+    def is_inverted(self):
+        # does the rotation reverse the Z axis?
+        return np.sign(self.transform_point(PZ()).z) > 0
 
 
 

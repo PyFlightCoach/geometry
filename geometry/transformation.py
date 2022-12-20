@@ -30,7 +30,6 @@ class Transformation(Base):
     def offset(self, p: Point):
         return Transformation(self.p + p, self.q)
 
-
     def __getattr__(self, name):
         if name in list("xyz"):
             return getattr(self.translation, name)
@@ -42,7 +41,6 @@ class Transformation(Base):
         elif name=="att":
             return self.rotation
         raise AttributeError(name)
-
 
     @staticmethod
     def build(p:Point, q:Quaternion):
@@ -83,6 +81,7 @@ class Transformation(Base):
             -q1 * q2
         )
 
+    
     def apply(self, oin: Union[Point, Quaternion]):
         if isinstance(oin, Point):
             return self.point(oin)
