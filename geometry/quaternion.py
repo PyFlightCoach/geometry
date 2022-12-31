@@ -11,7 +11,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from .point import Point
 from .base import Base
-
+from geometry import PZ
 from typing import Union, Tuple
 import numpy as np
 from warnings import warn
