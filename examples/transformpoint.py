@@ -13,8 +13,8 @@ c2 = Coord.from_nothing()
 #create the transformation
 transform = Transformation.from_coords(c1, c2)
 
-#point to be transformed
-pin = Point(10, 20, 30)
+#10 points to be transformed
+pin = Point(10, 20, 30).tile(10)
 
 #transfrom the point
 po = transform.apply(pin)
