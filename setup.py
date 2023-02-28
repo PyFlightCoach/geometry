@@ -13,8 +13,8 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 from setuptools import setup
 
 setup(
-   name='geometry',
-   version='0.01',
+   name='pfc_geometry',
+   version='0.1.0',
    description='Tools for playing with 3D geometry',
    author='Thomas David',
    author_email='thomasdavid0@gmail.com',

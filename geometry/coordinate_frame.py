@@ -15,7 +15,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 from geometry.base import Base
-# TODO look at scipy.spatial.transform.Rotation
 
 
 class Coord(Base):
