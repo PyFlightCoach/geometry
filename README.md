@@ -7,3 +7,8 @@ Where operations are supported between geometric types the size of the output is
 Magic methods are used extensively and the function of operators are logical for each type. If unsure what the logical option is then check the code where it should be pretty clear. 
 
 Many convenience methods and constructors are available. Documentation is limited but if you need something it has probably already been written so check the code first. 
+
+
+now available on pypi:
+
+pip install pfc-geometry
