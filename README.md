@@ -1,4 +1,4 @@
-# README #
+# geometry #
 
 Tools for handling 3D geometry, mostly just adds a nice interface to various geometric enterties. Each geometric entity can also be a vector of geometric entities. Each entity wraps a numpy array with the relevant number of columns labelled according to the cols class property and rows equal to the number of elements in the vector. Attribute access to each column is available and returns a numpy array. 
 
