@@ -258,3 +258,7 @@ class Base:
 
     def round(self, decimals=0):
         return self.__class__(self.data.round(decimals))
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}\n{self.to_pandas()}"
+    
