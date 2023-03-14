@@ -206,3 +206,11 @@ def test_concatenate():
     assert len(c) == len(a) + len(b) 
     np.testing.assert_array_equal(c.a, np.concatenate([a.a, b.a], axis=0))
 
+
+
+def test_repr__():
+    p = ABC(1,2,3)
+    rpr = p.__repr__().split("\n")
+    assert rpr[0] == "ABC"
+    assert np.all(rpr[1:] == str(p.to_pandas()).split("\n"))
+    
