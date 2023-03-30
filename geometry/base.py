@@ -47,11 +47,11 @@ class Base:
             elif "data" in kwargs:
                 args = [kwargs["data"]]
             else:
-                raise TypeError("unknown kwargs passed")
+                raise TypeError(f"unknown kwargs passed to {self.__class__.__name__}: {args}")
 
         if len(args)==1: 
-            if isinstance(args[0], np.ndarray): #data was passed directly
-                self.data = self.__class__._clean_data(args[0])
+            if isinstance(args[0], np.ndarray) or isinstance(args[0], list): #data was passed directly
+                self.data = self.__class__._clean_data(np.array(args[0]))
 
             elif all([isinstance(a, self.__class__) for a in args[0]]):
                 #a list of self.__class__ is passed, concatenate into one
@@ -60,7 +60,7 @@ class Base:
             elif isinstance(args[0], pd.DataFrame):
                 self.data = self.__class__._clean_data(np.array(args[0]))
             else:
-                raise TypeError("unknown data passed")
+                raise TypeError(f"unknown args passed to {self.__class__.__name__}: {args[0]}")
             
         elif len(args) == len(self.__class__.cols):
             #three args passed, each represents a col
@@ -80,7 +80,7 @@ class Base:
     def _clean_data(cls, data) -> np.ndarray:
         assert isinstance(data, np.ndarray)
         if data.dtype == 'O': 
-            raise TypeError('data must have homogeneous shape')
+            raise TypeError(f'data must have homogeneous shape for {cls.__name__}, given {data.shape}')
         if len(data.shape) == 1:
             data = data.reshape(1, len(data))
         
