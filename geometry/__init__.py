@@ -17,11 +17,11 @@ from .transformation import Transformation
 from .mass import Mass
 
 
-def Euler(*args, **kwargs):
+def Euler(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs))
     
 
-def Euldeg(*args, **kwargs):
+def Euldeg(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs).radians())
 
 
