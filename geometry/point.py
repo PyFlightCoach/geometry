@@ -24,12 +24,9 @@ class Point(Base):
     ]
 
     def scale(self, value):
-        a, b=value, abs(self)
-        res = a/b
-        res[b==0] = 0
-        res = self * res
-        
-        return res
+        res = value/abs(self)
+        res[self==0] = 0
+        return self * res
         
     def unit(self):
         return self.scale(1)
@@ -152,14 +149,10 @@ def angle_between(a: Point, b: Point) -> np.ndarray:
 
 @ppmeth
 def scalar_projection(a: Point, b: Point) -> Point:
-    if a==0 or b==0:
-        return 0
     return a.cos_angle_between(b) * abs(a)
 
 @ppmeth
 def vector_projection(a: Point, b: Point) -> Point:
-    if abs(a) == 0:
-        return Point.zeros()
     return b.scale(a.scalar_projection(b))
 
 @ppmeth

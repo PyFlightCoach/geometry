@@ -59,12 +59,6 @@ def test_is_parallel():
     assert not Point(1,0, 0).is_parallel(Point(0,1, 0))
 
 
-@mark.skip("this is going to be picked up later with coord and Quaternion stuff")
-def test_rotate():
-    assert PX().rotate(np.identity(3)) == PX()
-
-    assert PX().rotate(np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])) == Point(0, 1, 0)
-
 def test_scalar_projection():
     assert Point(1, 1, 0).scalar_projection(PX()) == 1
     assert P0().scalar_projection(Point(1, 1, 0)) == 0
@@ -90,3 +84,11 @@ def test_X():
 
 def test_to_rotation_matrix():
     np.testing.assert_array_equal(P0().to_rotation_matrix()[0],np.identity(3))
+
+
+def test_vector_projection():
+    res = Point.vector_projection(PX(1,20), PY(1))
+    assert res == P0()
+
+    res = Point.vector_projection(PZ(20), PZ(20,20))
+    assert res == PZ(20)
