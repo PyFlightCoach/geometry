@@ -9,6 +9,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
+from __future__ import annotations
 from .base import Base
 import numpy as np
 import pandas as pd
@@ -23,12 +24,13 @@ class Point(Base):
         "arcsin","arccos","arctan",
     ]
 
-    def scale(self, value):
-        res = value/abs(self)
-        res[self==0] = 0
+    def scale(self, value) -> Point:
+        with np.errstate(divide="ignore"):
+            res = value/abs(self)
+        res[res==np.inf] = 0
         return self * res
         
-    def unit(self):
+    def unit(self) -> Point:
         return self.scale(1)
 
     def remove_outliers(self, nstds = 2):
@@ -138,10 +140,7 @@ def cross(a, b) -> Point:
 
 @ppmeth
 def cos_angle_between(a: Point, b: Point) -> np.ndarray:
-    if a == 0 or b == 0:
-        raise ValueError("cannot measure the angle to a zero length vector")
     return a.unit().dot(b.unit())
-
 
 @ppmeth
 def angle_between(a: Point, b: Point) -> np.ndarray:
@@ -157,8 +156,6 @@ def vector_projection(a: Point, b: Point) -> Point:
 
 @ppmeth
 def is_parallel(a: Point, b: Point, tolerance=1e-6):
-    if a.unit() == b.unit():
-        return True
     return abs(a.cos_angle_between(b) - 1) < tolerance
 
 @ppmeth
@@ -175,9 +172,7 @@ def angle_between(a: Point, b: Point) -> float:
     return np.arccos(cos_angle_between(a, b))
 
 def arbitrary_perpendicular(v: Point) -> Point:
-    if v.x == 0 and v.y == 0:
-        return Point(0, 1, 0)
-    return Point(-v.y, v.x, 0).unit
+    return Point(-v.y, v.x, 0).unit()
 
 def vector_norm(point: Point):
     return abs(point)

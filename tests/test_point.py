@@ -35,15 +35,17 @@ def test_scale():
     assert Point(1,0,0).scale(5) == Point(5,0,0)
     assert Point(1,0,0).scale(5).data.shape == Point(5,0,0).data.shape
 
-    assert P0().scale(5) == P0()
+    with np.errstate(divide="raise"):
+        assert Point.concatenate([PX(1,10), P0(10)]).scale(5) == Point.concatenate([PX(5,10), P0(10)])
+
 
 def test_unit():
     assert Point(5,0,0).unit() == Point(1,0,0)
     assert Point(5,0,0).unit().data.shape == (1,3)
 
 def test_angle_between():
-    with raises(ValueError):
-        Point(1,2,3).cos_angle_between(Point.zeros())
+    #with raises(ValueError):
+    Point(1,2,3).cos_angle_between(Point.zeros()) == P0()
 
     assert PX().cos_angle_between(PY()) == 0
 

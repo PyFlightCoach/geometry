@@ -138,7 +138,8 @@ def test_body_rotate_zero():
     qinit = Quaternion.from_euler(Point(0, 0, 0))
     qdot = qinit.body_rotate(Point(0, 0, 0))
 
-    np.testing.assert_array_equal(list(qinit), list(qdot))
+    assert qinit == qdot
+#    np.testing.assert_array_equal(list(qinit), list(qdot))
 
 
 def test_to_from_axis_angle():
