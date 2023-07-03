@@ -9,7 +9,8 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from .point import Point
+from __future__ import annotations
+from .point import Point, P0
 from .base import Base
 from geometry import PZ
 from typing import Union, Tuple
@@ -23,7 +24,7 @@ class Quaternion(Base):
     cols=["w", "x", "y", "z"]
 
     @staticmethod
-    def zero(count=1):
+    def zero(count=1) -> Quaternion:
         return Quaternion(np.tile([1,0,0,0], (count,1)))
 
     @property
@@ -31,13 +32,13 @@ class Quaternion(Base):
         return np.array([self.x, self.y, self.z, self.w]).T
 
     @property
-    def axis(self):
+    def axis(self) -> Point:
         return Point(self.data[:,1:])
 
-    def norm(self):
+    def norm(self) -> Quaternion:
         return self / abs(self)
 
-    def conjugate(self):
+    def conjugate(self) -> Quaternion:
         return Quaternion(self.w, -self.x, -self.y, -self.z)
 
     def inverse(self):
@@ -53,7 +54,7 @@ class Quaternion(Base):
         elif isinstance(other, Number):
             return Quaternion(self.data * other)
         elif isinstance(other, np.ndarray):
-            return Quaternions(self.data * self._dprep(other))
+            return Quaternion(self.data * self._dprep(other))
                         
         raise TypeError(f"cant multiply a quaternion by a {other.__class__.__name__}")
 
@@ -61,7 +62,7 @@ class Quaternion(Base):
         #either it should have been picked up by the left hand object or it should commute
         return self * other   
 
-    def transform_point(self, point: Point):
+    def transform_point(self, point: Point) -> Point:
         '''Transform a point by the rotation described by self'''
         a, b = Base.length_check(self, point)
         
@@ -70,7 +71,7 @@ class Quaternion(Base):
         return (a * Quaternion(qdata) * a.inverse()).axis
   
     @staticmethod
-    def from_euler(eul: Point):
+    def from_euler(eul: Point) -> Quaternion:
         eul = Point.type_check(eul)
         # xyz-fixed Euler angle convention: matches ArduPilot AP_Math/Quaternion::from_euler
         half = eul * 0.5
@@ -86,7 +87,7 @@ class Quaternion(Base):
             ]).T
         )
 
-    def to_euler(self):
+    def to_euler(self) -> Point:
         
         # roll (x-axis rotation)
         sinr_cosp = 2 * (self.w * self.x + self.y * self.z)
@@ -111,7 +112,7 @@ class Quaternion(Base):
         return Point(roll, pitch, yaw)
 
     @staticmethod
-    def from_axis_angle(axangles: Point):
+    def from_axis_angle(axangles: Point) -> Quaternion:
         small = 1e-6
         angles = abs(axangles)
 
@@ -133,27 +134,39 @@ class Quaternion(Base):
         return Quaternion(qdat)
 
     def to_axis_angle(self):
+        a = (-self)._to_axis_angle()
+        b = self._to_axis_angle()
+
+        res = a.data
+        res[abs(a)>abs(b), :] = -b.data[abs(a)>abs(b), :]
+
+        return Point(res)
+
+    def _to_axis_angle(self) -> Point:
         """to a point of axis angles. must be normalized first."""
         angle = 2 * np.arccos(self.w)
         s = np.sqrt(1 - self.w**2)
         np.array(s)[np.array(s) < 1e-6] = 1.0
-        return self.axis * angle / s
-
+        with np.errstate(divide="ignore"):
+            sangle = angle / s
+            sangle[sangle==np.inf] = 0
+        res = self.axis * sangle
+        return res
 
     @staticmethod
-    def axis_rates(q, qdot) -> Point:
+    def axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = qdot * q.conjugate()
         return wdash.norm().to_axis_angle() 
 
     @staticmethod
-    def body_axis_rates(q, qdot) -> Point:
+    def body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = q.conjugate() * qdot
         return wdash.norm().to_axis_angle() 
 
-    def rotate(self, rate: Point):
+    def rotate(self, rate: Point) -> Quaternion:
         return (Quaternion.from_axis_angle(rate) * self).norm()
 
-    def body_rotate(self, rate: Point):
+    def body_rotate(self, rate: Point) -> Quaternion:
         return (self * Quaternion.from_axis_angle(rate)).norm()
 
     def diff(self, dt: np.array) -> Point:
@@ -193,7 +206,7 @@ class Quaternion(Base):
         ]).T
 
     @staticmethod
-    def from_rotation_matrix(matrix: np.ndarray):
+    def from_rotation_matrix(matrix: np.ndarray) -> Quaternion:
         # This method assumes row-vector and postmultiplication of that vector
         m = matrix.conj().transpose()
         if m[2, 2] < 0:
@@ -220,12 +233,12 @@ class Quaternion(Base):
     def __str__(self):
         return "W:{w:.2f}\nX:{x:.2f}\nY:{y:.2f}\nZ:{z:.2f}".format(w=self.w, x=self.x, y=self.y, z=self.z)
 
-    def closest_principal(self):
+    def closest_principal(self) -> Quaternion:
         eul = self.to_euler()
         rads = eul * (2 / np.pi)
         return Quaternion.from_euler(rads.round(0) * np.pi/2)
 
-    def is_inverted(self):
+    def is_inverted(self) -> bool:
         # does the rotation reverse the Z axis?
         return np.sign(self.transform_point(PZ()).z) > 0
 
