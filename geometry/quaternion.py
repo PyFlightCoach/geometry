@@ -159,9 +159,19 @@ class Quaternion(Base):
         return wdash.norm().to_axis_angle() 
 
     @staticmethod
+    def _axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
+        wdash = qdot * q.conjugate()
+        return wdash.norm()._to_axis_angle() 
+
+    @staticmethod
     def body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = q.conjugate() * qdot
         return wdash.norm().to_axis_angle() 
+
+    @staticmethod
+    def _body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
+        wdash = q.conjugate() * qdot
+        return wdash.norm()._to_axis_angle() 
 
     def rotate(self, rate: Point) -> Quaternion:
         return (Quaternion.from_axis_angle(rate) * self).norm()
@@ -174,7 +184,7 @@ class Quaternion(Base):
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
-        ps = Quaternion.axis_rates(
+        ps = Quaternion._axis_rates(
             Quaternion(self.data[:-1, :]),
             Quaternion(self.data[1:, :])
         ) / dt[:-1]
@@ -185,7 +195,7 @@ class Quaternion(Base):
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
-        ps = Quaternion.body_axis_rates(
+        ps = Quaternion._body_axis_rates(
             Quaternion(self.data[:-1, :]),
             Quaternion(self.data[1:, :])
         ) / dt[:-1]
