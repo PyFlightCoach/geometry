@@ -123,6 +123,14 @@ def test_transform_point2():
         ).reshape(10,3)
     )
 
+def test_tp_2():
+    np.testing.assert_array_equal(
+        Quaternion(0.1, 0, 0,0).norm().transform_point(Point(1,0,0)).data,
+        Point(1,0,0).data 
+    )
+
+
+
 def test_rotate():
     q = Quaternion.from_euler(P0())
     qdot = q.rotate(Point(0, 0, np.radians(5)))
