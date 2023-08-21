@@ -19,7 +19,7 @@ from geometry.base import Base
 
 class Coord(Base):
     cols = [
-        "ox", "oy", "ox",
+        "ox", "oy", "oz",
         "x1", "y1", "z1",
         "x2", "y2", "z2",
         "x3", "y3", "z3",
@@ -41,6 +41,10 @@ class Coord(Base):
             y.unit().data,
             z.unit().data
         ],axis=1))
+
+    @staticmethod
+    def zero(count=1):
+        return Coord.from_nothing(count)
 
     @staticmethod
     def from_nothing(count=1):

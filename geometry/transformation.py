@@ -102,8 +102,10 @@ class Transformation(Base):
     def point(self, point: Point):
         return self.translate(self.rotate(point))       
 
-    def coord(self, coord):
-        return coord.translate(self.p).rotate(self.q.to_rotation_matrix())
+    def coord(self, coord=None):
+        if coord is None:
+            coord = Coord.zero()
+        return coord.translate(self.p).rotate(self.q)
 
 
     def to_matrix(self):

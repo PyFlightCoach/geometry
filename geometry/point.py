@@ -155,6 +155,11 @@ def vector_projection(a: Point, b: Point) -> Point:
     return b.scale(a.scalar_projection(b))
 
 @ppmeth
+def vector_rejection(a: Point, b: Point) -> Point:
+    return a - ((Point.dot(a, b)) / Point.dot(b,b)) * b
+
+
+@ppmeth
 def is_parallel(a: Point, b: Point, tolerance=1e-6):
     return abs(a.cos_angle_between(b) - 1) < tolerance
 

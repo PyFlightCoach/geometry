@@ -236,6 +236,13 @@ class Base:
         else:
             return {key: getattr(self, key) for key in self.cols}
 
+    def to_dicts(self):
+        return self.to_pandas().to_dict('records')
+    
+    @classmethod
+    def from_dicts(Cls, data: dict):
+        return Cls(pd.DataFrame.from_dict(data))
+
     @classmethod
     def full(cls, val, count):
         return cls(np.tile(val.data, (count, 1)))

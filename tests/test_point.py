@@ -94,3 +94,10 @@ def test_vector_projection():
 
     res = Point.vector_projection(PZ(20), PZ(20,20))
     assert res == PZ(20)
+
+
+def test_vector_rejection():
+    assert Point.vector_rejection(PX(), PX()) == P0()
+    assert Point.vector_rejection(PY(), PX()) == PY()
+    assert Point.vector_rejection(Point(1,1,0), PX()) == PY()
+    assert Point.vector_rejection(Point(1,1,1), PX()) == Point(0, 1, 1)
