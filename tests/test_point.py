@@ -4,7 +4,7 @@ import unittest
 from math import pi
 from pytest import mark, approx, fixture, raises
 import numpy as np
-
+from geometry.testing import assert_equal
 
 def test_init():
     p = Point(1,2,3)
@@ -101,3 +101,15 @@ def test_vector_rejection():
     assert Point.vector_rejection(PY(), PX()) == PY()
     assert Point.vector_rejection(Point(1,1,0), PX()) == PY()
     assert Point.vector_rejection(Point(1,1,1), PX()) == Point(0, 1, 1)
+
+
+def test_remove_outliers():
+    ps = P0(100)
+
+    ps.data[50,:] = [1000,1000,1000]
+
+    sps = ps.remove_outliers()
+
+    assert_equal(sps, P0(100))
+
+

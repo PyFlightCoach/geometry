@@ -42,7 +42,7 @@ class Point(Base):
 
         data[abs(ab - mean) > nstds * std, :] = [np.nan, np.nan, np.nan]
 
-        return Point(pd.DataFrame(data).fillna(method="ffill").to_numpy())
+        return Point(pd.DataFrame(data).ffill().to_numpy())
 
     def mean(self):
         return Point(np.mean(self.data, axis=0))
