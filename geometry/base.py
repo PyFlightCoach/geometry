@@ -196,8 +196,11 @@ class Base:
     def __truediv__(self, other):
         return self.__class__(self.data / other)
 
+
+
     def __str__(self):
-        return str(pd.DataFrame(self.data, columns=self.__class__.cols))
+        means = ' '.join(f'{c}_={v}' for c, v in zip(self.cols, np.mean(self.data, axis=0).round(2)))
+        return f'{self.__class__.__name__}({means}, len={len(self)})'
 
     def __abs__(self):
         return np.linalg.norm(self.data, axis=1)
@@ -267,5 +270,5 @@ class Base:
         return self.__class__(self.data.round(decimals))
     
     def __repr__(self):
-        return f"{self.__class__.__name__}\n{self.to_pandas()}"
+        return str(self)
     
