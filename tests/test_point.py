@@ -113,3 +113,7 @@ def test_remove_outliers():
     assert_equal(sps, P0(100))
 
 
+def test_remove_outliers_fail():
+    import pandas as pd
+    p = Point(pd.read_csv('tests/test_remove_outliers.csv').iloc[:,1:])
+    assert_equal(p, p.remove_outliers(3))
