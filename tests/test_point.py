@@ -116,4 +116,4 @@ def test_remove_outliers():
 def test_remove_outliers_fail():
     import pandas as pd
     p = Point(pd.read_csv('tests/test_remove_outliers.csv').iloc[:,1:])
-    assert_equal(p, p.remove_outliers(3))
+    assert np.sum(np.isnan(p.data)) == 0

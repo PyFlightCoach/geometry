@@ -11,6 +11,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from typing import Type, List
+from typing_extensions import Self
 import numpy as np
 import pandas as pd
 from numbers import Number
@@ -102,7 +103,7 @@ class Base:
         return a, b
 
     @classmethod
-    def concatenate(cls, items):
+    def concatenate(cls, items) -> Self:
         return cls(np.concatenate([i.data for i in items], axis=0))
 
     def __getattr__(self, name):
@@ -116,7 +117,7 @@ class Base:
     def __dir__(self):
         return self.__class__.cols
 
-    def __getitem__(self, sli):
+    def __getitem__(self, sli) -> Self:
         return self.__class__(self.data[sli,:])
 
     def _dprep(self, other):        
@@ -146,18 +147,18 @@ class Base:
         else:
             raise ValueError(f"unhandled datatype ({other.__class__.name})")
 
-    def radians(self):
+    def radians(self) -> Self:
         return self.__class__(np.radians(self.data))
 
-    def degrees(self):
+    def degrees(self) -> Self:
         return self.__class__(np.degrees(self.data))
 
 
 
-    def count(self):
+    def count(self) ->  int:
         return len(self)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.data.shape[0]
 
     @dprep
@@ -165,35 +166,35 @@ class Base:
         return np.all(self.data == other)
 
     @dprep
-    def __add__(self, other):
+    def __add__(self, other) -> Self:
         return self.__class__(self.data + other)
     
     @dprep
-    def __radd__(self, other):
+    def __radd__(self, other) -> Self:
         return self.__class__(other + self.data)
 
     @dprep
-    def __sub__(self, other):
+    def __sub__(self, other) -> Self:
         return self.__class__(self.data - other)
     
     @dprep
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> Self:
         return self.__class__(other - self.data)
 
     @dprep
-    def __mul__(self, other):
+    def __mul__(self, other) -> Self:
         return self.__class__(self.data * other)
 
     @dprep
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> Self:
         return self.__class__(other * self.data)
 
     @dprep
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> Self:
         return self.__class__(other / self.data)
 
     @dprep
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> Self:
         return self.__class__(self.data / other)
 
 
@@ -205,14 +206,14 @@ class Base:
     def __abs__(self):
         return np.linalg.norm(self.data, axis=1)
 
-    def __neg__(self):
+    def __neg__(self) -> Self:
         return self.__class__(-self.data)
 
     @dprep
-    def dot(self, other):
+    def dot(self, other: Self) -> Self:
         return np.einsum('ij,ij->i', self.data, other)   
 
-    def diff(self, dt:np.array):
+    def diff(self, dt:np.array) -> Self:
         assert len(dt) == len(self)
         return self.__class__(
             np.gradient(self.data,axis=0) \
@@ -230,7 +231,7 @@ class Base:
             index=index
         )
 
-    def tile(self, count):
+    def tile(self, count) -> Self:
         return self.__class__(np.tile(self.data, (count, 1)))
 
     def to_dict(self):

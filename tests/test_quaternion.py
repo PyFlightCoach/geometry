@@ -1,6 +1,6 @@
 import unittest
 from pytest import mark, approx, raises
-from geometry.quaternion import Quaternion
+from geometry.quaternion import Quaternion, Q0
 from geometry.point import Point, PX, PY, PZ, P0
 from geometry import Euler, Euldeg
 
@@ -180,6 +180,14 @@ def test_body_axis_rates():
 
     rates = Quaternion.body_axis_rates(q, qdot)
     np.testing.assert_almost_equal(np.degrees(rates.data), Point(5,0,0).data)
+
+def test_body_axis_rates_constant():
+    ps = Quaternion.body_axis_rates(Q0(), Q0()) 
+    assert not np.any(np.isnan(ps.data))
+
+def test_body_diff_constant():
+    ps = Euler(0,0,0).tile(20).body_diff(np.ones(20))
+    assert not np.any(np.isnan(ps.data))
 
 
 

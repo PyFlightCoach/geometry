@@ -171,7 +171,7 @@ class Quaternion(Base):
     @staticmethod
     def _body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = q.conjugate() * qdot
-        return wdash.norm()._to_axis_angle() 
+        return wdash.norm().to_axis_angle() 
 
     def rotate(self, rate: Point) -> Quaternion:
         return (Quaternion.from_axis_angle(rate) * self).norm()
