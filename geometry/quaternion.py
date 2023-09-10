@@ -134,11 +134,12 @@ class Quaternion(Base):
         return Quaternion(qdat)
 
     def to_axis_angle(self):
-        a = (-self)._to_axis_angle()
-        b = self._to_axis_angle()
+        a = self._to_axis_angle()
+        b = (-self)._to_axis_angle()
 
         res = a.data
-        res[abs(a)>abs(b), :] = -b.data[abs(a)>abs(b), :]
+        replocs = abs(a)>abs(b)
+        res[replocs, :] = b.data[replocs, :]
 
         return Point(res)
 
@@ -147,9 +148,10 @@ class Quaternion(Base):
         angle = 2 * np.arccos(self.w)
         s = np.sqrt(1 - self.w**2)
         np.array(s)[np.array(s) < 1e-6] = 1.0
-        with np.errstate(divide="ignore"):
+        with np.errstate(divide="ignore", invalid='ignore'):
             sangle = angle / s
             sangle[sangle==np.inf] = 0
+            sangle[np.isnan(sangle)] = 0
         res = self.axis * sangle
         return res
 
@@ -171,7 +173,7 @@ class Quaternion(Base):
     @staticmethod
     def _body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = q.conjugate() * qdot
-        return wdash.norm().to_axis_angle() 
+        return wdash.norm()._to_axis_angle() 
 
     def rotate(self, rate: Point) -> Quaternion:
         return (Quaternion.from_axis_angle(rate) * self).norm()
@@ -195,7 +197,7 @@ class Quaternion(Base):
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
-        ps = Quaternion._body_axis_rates(
+        ps = Quaternion.body_axis_rates(
             Quaternion(self.data[:-1, :]),
             Quaternion(self.data[1:, :])
         ) / dt[:-1]

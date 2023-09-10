@@ -3,7 +3,7 @@ from pytest import mark, approx, raises
 from geometry.quaternion import Quaternion, Q0
 from geometry.point import Point, PX, PY, PZ, P0
 from geometry import Euler, Euldeg
-
+import pandas as pd
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -116,7 +116,7 @@ def test_transform_point2():
 
     np.testing.assert_array_almost_equal(
         tqs.transform_point(Point(1, 1, 1)).data,
-        quaternion.rotate_vectors(
+        Quaternion.rotate_vectors(
             np.array([np.quaternion(*q.data[0]) for q in tqs]),
             Point(1,1,1).tile(1).data,
             axis=1
@@ -219,8 +219,12 @@ def test_closest_principal():
         ).data
     )
 
-    
 
+
+def test_backward_diff_problem():
+    data = pd.read_csv('tests/quat_body_diff_test.csv')
+    ps = Quaternion(data.iloc[:,1:]).body_diff(data.iloc[:,0].to_numpy())
+    assert np.mean(ps.y[100:200]) > 0
    # rmats = np.array([
    #     np.identity(3),
    #     Point(1, 1, 0).to_rotation_matrix()[0],

@@ -205,6 +205,9 @@ class Base:
 
     def __abs__(self):
         return np.linalg.norm(self.data, axis=1)
+    
+    def abs(self) -> Self:
+        return self.__class__(np.abs(self.data))
 
     def __neg__(self) -> Self:
         return self.__class__(-self.data)
