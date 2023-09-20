@@ -242,6 +242,10 @@ class Base:
             return {key: getattr(self, key)[0] for key in self.cols}
         else:
             return {key: getattr(self, key) for key in self.cols}
+    
+    @classmethod
+    def from_dict(Cls, data):
+        return Cls(**data)
 
     def to_dicts(self):
         return self.to_pandas().to_dict('records')
