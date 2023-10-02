@@ -33,6 +33,10 @@ class Mass(Base):
     def matrix(self):
         return self.data[:,1:].reshape((len(self), 3, 3))
 
+    @property
+    def I(self):
+        return self.matrix()
+
     def offset(self, v: Point):
         xx = v.y**2 + v.z**2
         yy = v.z**2 + v.x**2

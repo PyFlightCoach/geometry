@@ -242,9 +242,6 @@ class Quaternion(Base):
         q *= 0.5 / np.sqrt(t)
         return Quaternion(*q)
 
-    def __str__(self):
-        return "W:{w:.2f}\nX:{x:.2f}\nY:{y:.2f}\nZ:{z:.2f}".format(w=self.w, x=self.x, y=self.y, z=self.z)
-
     def closest_principal(self) -> Quaternion:
         eul = self.to_euler()
         rads = eul * (2 / np.pi)
