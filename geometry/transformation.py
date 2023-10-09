@@ -12,7 +12,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 from geometry import Base, Point, Quaternion, Point, P0, Q0, Coord
 
 import numpy as np
-from typing import Union
+from typing import Union, Self
 
 
 class Transformation(Base):
@@ -82,13 +82,16 @@ class Transformation(Base):
         )
 
     
-    def apply(self, oin: Union[Point, Quaternion]):
+    def apply(self, oin: Union[Point, Quaternion, Self, Coord]):
         if isinstance(oin, Point):
             return self.point(oin)
         elif isinstance(oin, Quaternion):
             return self.rotate(oin)
+        elif isinstance(oin, Coord):
+            return self.coord(oin)
         elif isinstance(oin, self.__class__):
             return Transformation(self.apply(oin.p), self.apply(oin.q))
+        
 
     def rotate(self, oin: Union[Point, Quaternion]):
         if isinstance(oin, Point):
