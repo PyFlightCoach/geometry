@@ -50,7 +50,7 @@ class GPS(Base):
         return np.all(self.data == other.data)
 
     def __sub__(self, other) -> Point:
-        assert isinstance(other, GPS)
+        assert isinstance(other, GPS), f'Cannot offset a GPS by a {other.__class__.__name__}'
         if len(other) == len(self):
             return Point(
                 -(other.lat - self.lat) * LOCFAC,
