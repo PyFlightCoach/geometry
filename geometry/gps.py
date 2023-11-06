@@ -29,7 +29,7 @@ LOCFAC = math.radians(erad)
 
 
 class GPS(Base):
-    cols = ["lat", "long"]
+    cols = ["lat", "long", "alt"]
     # was 6378137, extra precision removed to match ardupilot
 
     def __init__(self, *args, **kwargs):
@@ -43,7 +43,8 @@ class GPS(Base):
 
         return GPS(
             latb,
-            self.long + pin.y / (LOCFAC * safecos(latb))
+            self.long + pin.y / (LOCFAC * safecos(latb)),
+            pin.z
         )
 
     def __eq__(self, other) -> bool:
@@ -55,7 +56,7 @@ class GPS(Base):
             return Point(
                 -(other.lat - self.lat) * LOCFAC,
                 -(other.long - self.long) * LOCFAC * self._longfac,
-                np.zeros(len(self))
+                other.alt - self.alt
             )
         elif len(other) == 1:
             return self - GPS.full(other, len(self))
@@ -66,7 +67,7 @@ class GPS(Base):
 
     def offset(self, pin: Point):
         if len(pin) == 1 and len(self) > 1:
-            pin = Point.full(pin, self.count)
+            pin = Point.full(pin, len(self))
         elif len(self) == 1 and len(pin) > 1:
             return self.full(len(pin)).offset(pin)
         
@@ -76,12 +77,15 @@ class GPS(Base):
         latb = self.lat + pin.x / LOCFAC
         return GPS(
             latb,
-            self.long + pin.y / (LOCFAC * safecos(latb))
+            self.long + pin.y / (LOCFAC * safecos(latb)),
+            self.alt + pin.z
         )
 
 
 
 '''
+Extract from ardupilot:
+
 // scaling factor from 1e-7 degrees to meters at equator
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
 static constexpr float LOCATION_SCALING_FACTOR = 0.011131884502145034f;
@@ -102,10 +106,3 @@ float Location::long_scale() const
 }
 '''
 
-
-if __name__ == "__main__":
-    home = GPS(51.459387, -2.791393)
-
-    new = GPS(51.458876, -2.789092)
-    coord = home - new
-    print(coord.x, coord.y)
