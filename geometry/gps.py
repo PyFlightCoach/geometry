@@ -36,17 +36,6 @@ class GPS(Base):
         super().__init__(*args, **kwargs)
         self._longfac = safecos(self.lat)
 
-
-    def offset(self, pin: Point):
-        assert len(pin) == len(self)
-        latb = self.lat - pin.x / LOCFAC
-
-        return GPS(
-            latb,
-            self.long + pin.y / (LOCFAC * safecos(latb)),
-            pin.z
-        )
-
     def __eq__(self, other) -> bool:
         return np.all(self.data == other.data)
 
@@ -54,8 +43,8 @@ class GPS(Base):
         assert isinstance(other, GPS), f'Cannot offset a GPS by a {other.__class__.__name__}'
         if len(other) == len(self):
             return Point(
-                -(other.lat - self.lat) * LOCFAC,
-                -(other.long - self.long) * LOCFAC * self._longfac,
+                (self.lat - other.lat) * LOCFAC,
+                (self.long - other.long) * LOCFAC * self._longfac,
                 other.alt - self.alt
             )
         elif len(other) == 1:
@@ -63,24 +52,24 @@ class GPS(Base):
         elif len(self) == 1:
             return GPS.full(self, len(self)) - other
         else:
-            raise ValueError(f"incompatible lengths for sub ({len(self)}) - ({len(other)})")
+            raise ValueError(f"incompatible lengths for GPS sub ({len(self)}) != ({len(other)})")
 
     def offset(self, pin: Point):
+        '''Offset by a point in NED coordinates'''
         if len(pin) == 1 and len(self) > 1:
             pin = Point.full(pin, len(self))
         elif len(self) == 1 and len(pin) > 1:
-            return self.full(len(pin)).offset(pin)
+            return GPS.full(self, len(pin)).offset(pin)
         
         if not len(pin) == len(self):
-            raise ValueError(f"incompatible lengths for offset ({len(self)}) - ({len(pin)})")
+            raise ValueError(f"incompatible lengths for GPS offset ({len(self)}) != ({len(pin)})")
 
         latb = self.lat + pin.x / LOCFAC
         return GPS(
             latb,
             self.long + pin.y / (LOCFAC * safecos(latb)),
-            self.alt + pin.z
+            self.alt - pin.z
         )
-
 
 
 '''

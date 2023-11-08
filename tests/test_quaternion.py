@@ -44,6 +44,13 @@ def test_from_euler():
     )
 
 
+def test_from_euler_unwrap():    
+    q = Q0(10).rotate(PZ()*np.radians(np.linspace(0,360, 10)))
+    np.testing.assert_array_almost_equal(
+        Quaternion.from_euler(q.to_euler()).diff(1).data, 
+        q.diff(1).data
+    )
+
 
 def test_to_euler():
     qarr = Quaternion(np.random.random((2, 4))).norm()

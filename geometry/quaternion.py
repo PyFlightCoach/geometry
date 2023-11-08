@@ -15,6 +15,8 @@ from .base import Base
 from geometry import PZ
 from typing import Union, Tuple
 import numpy as np
+import pandas as pd
+import numpy.typing as npt
 from warnings import warn
 from numbers import Number
 
@@ -44,7 +46,7 @@ class Quaternion(Base):
     def inverse(self):
         return self.conjugate().norm()
 
-    def __mul__(self, other):
+    def __mul__(self, other: Union[Number, Quaternion, np.ndarray]) -> Quaternion:
         if isinstance(other, Quaternion):
             a, b = Quaternion.length_check(self, Quaternion.type_check(other))
             w = a.w * b.w - a.axis.dot(b.axis)
@@ -58,7 +60,7 @@ class Quaternion(Base):
                         
         raise TypeError(f"cant multiply a quaternion by a {other.__class__.__name__}")
 
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> Quaternion:
         #either it should have been picked up by the left hand object or it should commute
         return self * other   
 
@@ -72,8 +74,8 @@ class Quaternion(Base):
   
     @staticmethod
     def from_euler(eul: Point) -> Quaternion:
-        eul = Point.type_check(eul)
-        # xyz-fixed Euler angle convention: matches ArduPilot AP_Math/Quaternion::from_euler
+        '''Create a quaternion from a Point of Euler angles order z, y, x'''
+        eul = Point.type_check(eul).unwrap()
         half = eul * 0.5
         c = half.cos
         s = half.sin
@@ -88,17 +90,14 @@ class Quaternion(Base):
         )
 
     def to_euler(self) -> Point:
-        
-        # roll (x-axis rotation)
+        '''Create a Point of Euler angles order z,y,x'''
         sinr_cosp = 2 * (self.w * self.x + self.y * self.z)
         cosr_cosp = 1 - 2 * (self.x * self.x + self.y * self.y)
         roll = np.arctan2(sinr_cosp, cosr_cosp)
 
-        # pitch (y-axis rotation)
         sinp = 2 * (self.w * self.y - self.z * self.x)
         pitch = np.arcsin(sinp)
                 
-        # yaw (z-axis rotation)
         siny_cosp = 2 * (self.w * self.z + self.x * self.y)
         cosy_cosp = 1 - 2 * (self.y * self.y + self.z * self.z)
         yaw = np.arctan2(siny_cosp, cosy_cosp)
@@ -133,7 +132,7 @@ class Quaternion(Base):
         #qdat[abs(Quaternions(qdat)) < .001] = np.array([[1, 0, 0, 0]])
         return Quaternion(qdat)
 
-    def to_axis_angle(self):
+    def to_axis_angle(self) -> Point:
         a = self._to_axis_angle()
         b = (-self)._to_axis_angle()
 
@@ -181,8 +180,10 @@ class Quaternion(Base):
     def body_rotate(self, rate: Point) -> Quaternion:
         return (self * Quaternion.from_axis_angle(rate)).norm()
 
-    def diff(self, dt: np.array) -> Point:
+    def diff(self, dt: Union[Number, np.ndarray]) -> Point:
         """differentiate in the world frame"""
+        if not pd.api.types.is_list_like(dt):
+            dt = np.full(len(self), dt)
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
@@ -190,10 +191,12 @@ class Quaternion(Base):
             Quaternion(self.data[:-1, :]),
             Quaternion(self.data[1:, :])
         ) / dt[:-1]
-        return Point(np.vstack([ps.data, ps.data[-1,:]]))#.remove_outliers(2)  # Bodge to get rid of phase jump
+        return Point(np.vstack([ps.data, ps.data[-1,:]]))
 
-    def body_diff(self, dt: np.array) -> Point:
+    def body_diff(self, dt: Union[Number, np.ndarray]) -> Point:
         """differentiate in the body frame"""
+        if not pd.api.types.is_list_like(dt):
+            dt = np.full(len(self), dt)
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
@@ -204,7 +207,7 @@ class Quaternion(Base):
         return Point(np.vstack([ps.data, ps.data[-1,:]]))
 
     
-    def to_rotation_matrix(self):
+    def to_rotation_matrix(self) -> npt.NDArray[np.float64]:
         """http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
         https://github.com/mortlind/pymath3d/blob/master/math3d/quaternion.py
         """
@@ -218,7 +221,7 @@ class Quaternion(Base):
         ]).T
 
     @staticmethod
-    def from_rotation_matrix(matrix: np.ndarray) -> Quaternion:
+    def from_rotation_matrix(matrix: npt.NDArray[np.float64]) -> Quaternion:
         # This method assumes row-vector and postmultiplication of that vector
         m = matrix.conj().transpose()
         if m[2, 2] < 0:

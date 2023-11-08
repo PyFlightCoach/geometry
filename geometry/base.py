@@ -10,9 +10,10 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from typing import Type, List
+from typing import Type, List, Self
 from typing_extensions import Self
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from numbers import Number
 
@@ -78,7 +79,7 @@ class Base:
             raise TypeError(f"Empty {self.__class__.__name__} not allowed")
 
     @classmethod
-    def _clean_data(cls, data) -> np.ndarray:
+    def _clean_data(cls, data) -> npt.NDArray[np.float64]:
         assert isinstance(data, np.ndarray)
         if data.dtype == 'O': 
             raise TypeError(f'data must have homogeneous shape for {cls.__name__}, given {data.shape}')
@@ -106,7 +107,7 @@ class Base:
     def concatenate(cls, items) -> Self:
         return cls(np.concatenate([i.data for i in items], axis=0))
 
-    def __getattr__(self, name):
+    def __getattr__(self, name) -> npt.NDArray[np.float64]:
         if name in self.__class__.cols:
             return self.data[:,self.__class__.cols.index(name)]
             #return res[0] if len(res) == 1 else res
@@ -153,8 +154,6 @@ class Base:
     def degrees(self) -> Self:
         return self.__class__(np.degrees(self.data))
 
-
-
     def count(self) ->  int:
         return len(self)
 
@@ -197,8 +196,6 @@ class Base:
     def __truediv__(self, other) -> Self:
         return self.__class__(self.data / other)
 
-
-
     def __str__(self):
         means = ' '.join(f'{c}_={v}' for c, v in zip(self.cols, np.mean(self.data, axis=0).round(2)))
         return f'{self.__class__.__name__}({means}, len={len(self)})'
@@ -217,6 +214,8 @@ class Base:
         return np.einsum('ij,ij->i', self.data, other)   
 
     def diff(self, dt:np.array) -> Self:
+        if not pd.api.types.is_list_like(dt):
+            dt = np.full(len(self), dt)
         assert len(dt) == len(self)
         return self.__class__(
             np.gradient(self.data,axis=0) \
@@ -280,3 +279,9 @@ class Base:
     def __repr__(self):
         return str(self)
     
+    def copy(self):
+        return self.__class__(self.data.copy())
+    
+
+    def unwrap(self, discont=np.pi):
+        return self.__class__(np.unwrap(self.data, discont=discont, axis=0))
