@@ -1,7 +1,7 @@
 from pytest import mark, approx
 from geometry import Coord, Transformation, Point, Quaternion, PX, PY, PZ, P0
 import numpy as np
-
+from geometry.testing import assert_almost_equal
 
 
 def test_from_coords():
@@ -12,13 +12,14 @@ def test_from_coords():
     
     ps = Point(np.random.random((100, 3)))
     
-    np.testing.assert_array_almost_equal(
-        ps.data,
-        trans_from.translate(trans_to.translate(ps)).data
+    assert_almost_equal(
+        ps,
+        trans_from.translate(trans_to.translate(ps))
     )
 
     qs = Quaternion.from_euler(ps)
-    np.testing.assert_array_almost_equal(
+    
+    assert_almost_equal(
         qs,
         trans_from.rotate(trans_to.rotate(qs))
     )

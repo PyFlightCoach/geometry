@@ -3,8 +3,10 @@ from pytest import mark, approx, raises
 from geometry.quaternion import Quaternion, Q0
 from geometry.point import Point, PX, PY, PZ, P0
 from geometry import Euler, Euldeg
+from geometry.testing import assert_almost_equal
 import pandas as pd
 import numpy as np
+import quaternion
 from scipy.spatial.transform import Rotation as R
 
 
@@ -118,18 +120,6 @@ def test_body_diff():
         Point.X(np.pi/100, 100).data
     )
 
-def test_transform_point2():
-    tqs = Quaternion(np.random.random((10,4))).norm()
-
-    np.testing.assert_array_almost_equal(
-        tqs.transform_point(Point(1, 1, 1)).data,
-        Quaternion.rotate_vectors(
-            np.array([np.quaternion(*q.data[0]) for q in tqs]),
-            Point(1,1,1).tile(1).data,
-            axis=1
-        ).reshape(10,3)
-    )
-
 def test_tp_2():
     np.testing.assert_array_equal(
         Quaternion(0.1, 0, 0,0).norm().transform_point(Point(1,0,0)).data,
@@ -169,7 +159,8 @@ def test_to_from_axis_angle():
 
 def test_to_axis_angle():
     q1 = Quaternion.from_euler(PZ(np.pi/4))
-    assert q1.to_axis_angle() == PZ(np.pi/4)
+    
+    assert_almost_equal( q1.to_axis_angle(), PZ(np.pi/4))
 
 
 

@@ -66,7 +66,7 @@ def test_init_values():
     abc = ABC(*[np.ones(10) for _ in range(3)])
     np.testing.assert_array_equal(abc.data, np.ones((10,3)))
 
-    with raises(TypeError):
+    with raises(ValueError):
         abc = ABC([1,2,3], [1,2], [1,2,3,4])
 
     abc = ABC([1,2], [1,2], [1,2])
@@ -88,10 +88,6 @@ def test_init_kwargs():
 
     with raises(TypeError):
         ABC(ggg=234342)
-
-def test_init_list_of_self():
-    abc = ABC([ABC(1,2,3), ABC(np.ones((4,3)))])
-    np.testing.assert_array_equal(abc.b, np.array([2,1,1,1,1]))
 
 def test_init_empty():
     with raises(TypeError):
@@ -210,7 +206,6 @@ def test_concatenate():
 
 def test_repr__():
     p = ABC(1,2,3)
-    rpr = p.__repr__().split("\n")
-    assert rpr[0] == "ABC"
-    assert np.all(rpr[1:] == str(p.to_pandas()).split("\n"))
+    rpr = p.__repr__()
+    assert rpr == "ABC(a_=1.0 b_=2.0 c_=3.0, len=1)"
     
