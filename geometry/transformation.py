@@ -21,8 +21,16 @@ class Transformation(Base):
     def __init__(self, *args, **kwargs):
         if len(args) == len(kwargs) == 0:
             args = np.concatenate([P0().data,Q0().data],axis=1)
+        elif len(args) == 1:
+            if isinstance(args[0], Point):
+                args = np.concatenate([args[0].data,Q0().data],axis=1)
+            elif isinstance(args[0], Quaternion):
+                args = np.concatenate([P0().data,args[0].data],axis=1)
         if len(args) == 2:
-            args = np.concatenate([args[0].data, args[1].data], axis=1)
+            _q = args[0] if isinstance(args[0], Quaternion) else args[1]
+            _p = args[0] if isinstance(args[0], Point) else args[1]
+            assert isinstance(_q, Quaternion) and isinstance(_p, Point)
+            args = np.concatenate([_p.data, _q.data], axis=1)
         super().__init__(*args, **kwargs)
         self.p = Point(self.data[:,:3])
         self.q = Quaternion(self.data[:,3:])
