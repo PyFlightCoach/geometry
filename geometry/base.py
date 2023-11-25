@@ -285,3 +285,36 @@ class Base:
 
     def unwrap(self, discont=np.pi):
         return self.__class__(np.unwrap(self.data, discont=discont, axis=0))
+    
+    def filter(self, order, cutoff, ts: np.ndarray=None):
+        from scipy.signal import butter, freqz, filtfilt
+        if ts is None:
+            ts = np.array(range(len(self)))
+        N = len(self)
+        T = (ts[-1] - ts[0]) / N
+
+        fs = 1/T
+        b, a = butter(
+            order,
+            cutoff,
+            fs=fs,
+            btype='low', analog=False
+        )
+
+        return self.__class__(filtfilt(b, a, self.data, axis=0))
+    
+    def fft(self, ts: np.ndarray=None):
+        from scipy.fft import fft, fftfreq
+        if ts is None:
+            ts = np.array(range(len(self)))
+        N = len(self)
+        T = (ts[-1] - ts[0]) / N
+
+        yf = fft(self.data, axis=0)
+        xf = fftfreq(N, T)[:N//2]
+
+         
+        y=2.0/N * np.abs(yf[0:N//2, :])
+
+        return pd.DataFrame(np.column_stack([xf, y]), columns=['freq'] + self.cols).set_index('freq')
+
