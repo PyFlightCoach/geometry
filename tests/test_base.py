@@ -209,3 +209,9 @@ def test_repr__():
     rpr = p.__repr__()
     assert rpr == "ABC(a_=1.0 b_=2.0 c_=3.0, len=1)"
     
+
+def test_three_pandas_series():
+    df = pd.DataFrame(np.random.random((10,3)), columns=list("abc"))
+    abc = ABC(df.a, df.b, df.c)
+
+    pd.testing.assert_frame_equal(abc.to_pandas(), df)

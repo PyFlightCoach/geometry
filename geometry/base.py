@@ -72,7 +72,8 @@ class Base:
                 self.data = self.__class__._clean_data(np.array(args).T)
             elif all(isinstance(arg, list) for arg in args):
                 self.data = self.__class__._clean_data(np.array(args).T)
-
+            elif all(isinstance(arg, pd.Series) for arg in args):
+                self.data = self.__class__._clean_data(np.array(pd.concat(args, axis=1)))
             else:
                 raise TypeError
         else:
