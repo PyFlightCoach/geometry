@@ -50,5 +50,14 @@ class Mass(Base):
             ])) 
         ) + self
 
-
+    def momentum(self, v: Point):
+        return self.m * v
     
+    def angular_momentum(self, rvel: Point):
+        return Point(
+            self.xx * rvel.x + self.xy * rvel.y + self.xz * rvel.z,
+            self.yx * rvel.x + self.yy * rvel.y + self.yz * rvel.z,
+            self.zx * rvel.x + self.zy * rvel.y + self.zz * rvel.z,
+        )
+
+

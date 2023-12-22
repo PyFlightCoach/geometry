@@ -220,7 +220,7 @@ class Base:
         assert len(dt) == len(self)
         return self.__class__(
             np.gradient(self.data,axis=0) \
-                 / \
+                / \
                 np.tile(dt, (len(self.__class__.cols),1)).T)
 
     def to_pandas(self, prefix='', suffix='', columns=None, index=None):
@@ -314,7 +314,7 @@ class Base:
         yf = fft(self.data, axis=0)
         xf = fftfreq(N, T)[:N//2]
 
-         
+        
         y=2.0/N * np.abs(yf[0:N//2, :])
 
         return pd.DataFrame(np.column_stack([xf, y]), columns=['freq'] + self.cols).set_index('freq')
