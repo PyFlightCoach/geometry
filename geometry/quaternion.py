@@ -96,7 +96,8 @@ class Quaternion(Base):
         roll = np.arctan2(sinr_cosp, cosr_cosp)
 
         sinp = 2 * (self.w * self.y - self.z * self.x)
-        pitch = np.arcsin(sinp)
+        with np.errstate(invalid='ignore'):
+            pitch = np.arcsin(sinp)
                 
         siny_cosp = 2 * (self.w * self.z + self.x * self.y)
         cosy_cosp = 1 - 2 * (self.y * self.y + self.z * self.z)
