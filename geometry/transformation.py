@@ -29,7 +29,7 @@ class Transformation(Base):
         if len(args) == 2:
             _q = args[0] if isinstance(args[0], Quaternion) else args[1]
             _p = args[0] if isinstance(args[0], Point) else args[1]
-            assert isinstance(_q, Quaternion) and isinstance(_p, Point)
+            assert isinstance(_q, Quaternion) and isinstance(_p, Point), f'expected a Point and a Quaternion, got a {_p.__class__.__name__} and a {_q.__class__.__name__}'
             args = np.concatenate([_p.data, _q.data], axis=1)
         super().__init__(*args, **kwargs)
         self.p = Point(self.data[:,:3])
@@ -106,6 +106,8 @@ class Transformation(Base):
             return self.q.transform_point(oin)
         elif isinstance(oin, Quaternion):
             return self.q * oin
+        else:
+            raise TypeError(f"expected a Point or a Quaternion, got a {oin.__class__.__name__}")
 
     def translate(self, point: Point):
         return point + self.p
