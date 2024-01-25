@@ -114,6 +114,16 @@ class Base:
             #return res[0] if len(res) == 1 else res
         elif name in self.__class__.from_np + self.__class__.from_np_base:
             return self.__class__(getattr(np, name)(self.data))
+        else:
+            for col in self.__class__.cols:
+                if len(name) > len(col):
+                    if name[:len(col)] == col:
+                        try:
+                            id = int(name[len(col):])
+                        except ValueError:
+                            break
+                        return getattr(self, col)[id]
+
         raise AttributeError(f"Cannot get attribute {name}")
 
     def __dir__(self):

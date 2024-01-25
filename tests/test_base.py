@@ -215,3 +215,11 @@ def test_three_pandas_series():
     abc = ABC(df.a, df.b, df.c)
 
     pd.testing.assert_frame_equal(abc.to_pandas(), df)
+    
+    
+def test_string_value_access():
+    abc = ABC(1,2,3)
+    assert abc.a0 == 1
+    
+    with raises(AttributeError):
+        assert abc.ased == 1
