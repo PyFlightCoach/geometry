@@ -1,6 +1,6 @@
 from geometry import Base
 from numbers import Number
-from typing import Self
+from typing_extensions import Self
 import numpy as np
 from time import time
 
@@ -13,7 +13,11 @@ class Time(Base):
         if isinstance(t, Number):
             return Time(t, 1/30)
         else:
-            dt = np.array([1/30]) if len(t) == 1 else np.gradient(t)
+            if len(t) == 1:
+                dt = np.array([1/30]) 
+            else:
+                arr = np.diff(t)
+                dt = np.concatenate([arr, [arr[-1]]])
             return Time(t, dt)
 
     def scale(self, duration) -> Self:

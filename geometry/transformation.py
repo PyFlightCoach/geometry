@@ -9,10 +9,11 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from geometry import Base, Point, Quaternion, Point, P0, Q0, Coord
+from geometry import Base, Point, Quaternion, P0, Q0, Coord
 
 import numpy as np
-from typing import Union, Self
+from typing import Union
+from typing_extensions import Self
 
 
 class Transformation(Base):
