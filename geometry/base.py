@@ -10,8 +10,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from typing import Type, List
-from typing_extensions import Self
+from typing import Type, List, Self
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
