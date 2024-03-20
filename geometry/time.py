@@ -1,6 +1,6 @@
 from geometry import Base
 from numbers import Number
-from typing_extensions import Self
+from typing import Self
 import numpy as np
 from time import time
 

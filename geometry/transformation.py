@@ -13,7 +13,7 @@ from geometry import Base, Point, Quaternion, P0, Q0, Coord
 
 import numpy as np
 from typing import Union
-from typing_extensions import Self
+from typing import Self
 
 
 class Transformation(Base):
