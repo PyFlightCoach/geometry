@@ -10,7 +10,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from typing import Type, List, Self
+from typing import Self
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -170,6 +170,10 @@ class Base:
     def __len__(self) -> int:
         return self.data.shape[0]
 
+    @property
+    def ends(self) -> Self:
+        return self.__class__(self.data[[0,-1], :])
+
     @dprep
     def __eq__(self, other):
         return np.all(self.data == other)
@@ -233,7 +237,7 @@ class Base:
                 np.tile(dt, (len(self.__class__.cols),1)).T)
 
     def to_pandas(self, prefix='', suffix='', columns=None, index=None):
-        if not columns is None:
+        if columns is not None:
             cols = columns
         else:
             cols = [prefix + col + suffix for col in self.__class__.cols]
@@ -317,10 +321,10 @@ class Base:
         from scipy.fft import fft, fftfreq
         if ts is None:
             ts = np.array(range(len(self)))
-        N = len(self)
-        T = (ts[-1] - ts[0]) / N
+        N = len(self)*2
+        T = (ts[-1] - ts[0]) / len(self)
 
-        yf = fft(self.data, axis=0)
+        yf = fft(self.data, axis=0, n=N)
         xf = fftfreq(N, T)[:N//2]
 
         

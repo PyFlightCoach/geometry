@@ -10,16 +10,14 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-from .point import Point, P0
+from .point import Point
 from .base import Base
 from geometry import PZ
-from typing import Union, Tuple
 import numpy as np
-import pandas as pd
 import numpy.typing as npt
+import pandas as pd
 from warnings import warn
 from numbers import Number
-
 
 
 class Quaternion(Base):
@@ -46,7 +44,7 @@ class Quaternion(Base):
     def inverse(self):
         return self.conjugate().norm()
 
-    def __mul__(self, other: Union[Number, Quaternion, np.ndarray]) -> Quaternion:
+    def __mul__(self, other: Number | Quaternion | npt.NDArray) -> Quaternion:
         if isinstance(other, Quaternion):
             a, b = Quaternion.length_check(self, Quaternion.type_check(other))
             w = a.w * b.w - a.axis.dot(b.axis)
@@ -181,7 +179,7 @@ class Quaternion(Base):
     def body_rotate(self, rate: Point) -> Quaternion:
         return (self * Quaternion.from_axis_angle(rate)).norm()
 
-    def diff(self, dt: Union[Number, np.ndarray]) -> Point:
+    def diff(self, dt: Number | npt.NDArray) -> Point:
         """differentiate in the world frame"""
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
@@ -194,7 +192,7 @@ class Quaternion(Base):
         ) / dt[:-1]
         return Point(np.vstack([ps.data, ps.data[-1,:]]))
 
-    def body_diff(self, dt: Union[Number, np.ndarray]) -> Point:
+    def body_diff(self, dt: Number | npt.NDArray) -> Point:
         """differentiate in the body frame"""
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
