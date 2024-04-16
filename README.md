@@ -9,6 +9,9 @@ Magic methods are used extensively and the function of operators are logical for
 Many convenience methods and constructors are available. Documentation is limited but if you need something it has probably already been written so check the code first. 
 
 
-now available on pypi:
+Some examples are available here: https://pfcdocumentation.readthedocs.io/pyflightcoach/geometry.html
 
-pip install pfc-geometry
+now available on pypi:
+```bash
+    pip install pfc-geometry
+```

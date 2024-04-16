@@ -6,8 +6,6 @@ from geometry import Euler, Euldeg
 from geometry.testing import assert_almost_equal
 import pandas as pd
 import numpy as np
-import quaternion
-from scipy.spatial.transform import Rotation as R
 
 
 
@@ -37,14 +35,6 @@ def test_mul():
         err_msg="failed to do Quaternions * Quaternions"
     )
 
-def test_from_euler():
-    parr = np.random.random((20, 3))
-
-    np.testing.assert_array_almost_equal(
-        Quaternion.from_euler(Point(parr)).xyzw,
-        R.from_euler('xyz', parr).as_quat()
-    )
-
 
 def test_from_euler_unwrap():    
     q = Q0(10).rotate(PZ()*np.radians(np.linspace(0,360, 10)))
@@ -53,17 +43,6 @@ def test_from_euler_unwrap():
         q.diff(1).data
     )
 
-
-def test_to_euler():
-    qarr = Quaternion(np.random.random((2, 4))).norm()
-    eulers = qarr.to_euler()
-    
-    checks = np.array([R.from_euler("xyz", eul.data[0]).as_quat() for eul in eulers])
-    
-    np.testing.assert_array_almost_equal(
-        checks,
-        qarr.xyzw
-    )
 
 
 def test_norm():

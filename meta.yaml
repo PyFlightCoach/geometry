@@ -1,6 +1,6 @@
 package:
   name: geometry
-  version: "0.0.1"
+  version: "0.2.4"
 
 build:
   number: 0
@@ -14,8 +14,12 @@ requirements:
     - setuptools
   host:
     - python
+    - numpy
+    - pandas
   run:
     - python
+    - numpy
+    - pandas
 test:
   imports:
     - geometry
