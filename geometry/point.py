@@ -13,7 +13,6 @@ from __future__ import annotations
 from .base import Base
 import numpy as np
 import pandas as pd
-from typing import List 
 from warnings import warn
 
 
@@ -56,6 +55,9 @@ class Point(Base):
     def angles(self, p2):
         return (self.cross(p2) / (abs(self) * abs(p2))).arcsin
     
+    def planar_angles(self):
+        return Point(np.arctan2(self.y, self.z), np.arctan2(self.z, self.x), np.arctan2(self.x, self.y))
+
     def angle(self, p2):
         return abs(Point.angles(self, p2))
     
@@ -171,10 +173,6 @@ def is_perpendicular(a: Point, b: Point, tolerance=1e-6):
 def min_angle_between(p1: Point, p2: Point):
     angle = angle_between(p1, p2) % np.pi
     return min(angle, np.pi - angle)
-
-@ppmeth
-def angle_between(a: Point, b: Point) -> float: 
-    return np.arccos(cos_angle_between(a, b))
 
 def arbitrary_perpendicular(v: Point) -> Point:
     return Point(-v.y, v.x, 0).unit()
