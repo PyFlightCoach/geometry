@@ -1,0 +1,22 @@
+[build-system]
+requires = [
+    "setuptools>=60",
+    "setuptools-scm>=8.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pfc_geometry"
+authors = [{name = "Thomas David", email = "thomasdavid0@gmail.com"}]
+description = "A package for handling 3D geometry with a nice interface"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "GNU GPL v3"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["version", "dependencies"]
+
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}

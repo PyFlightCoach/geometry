@@ -33,7 +33,6 @@ def dprep(func):
     
     return wrapper
 
-
 class Base:
     __array_priority__ = 15.0   # this is a quirk of numpy so the __r*__ methods here take priority
     cols=[]
