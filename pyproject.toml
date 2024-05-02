@@ -12,9 +12,7 @@ description = "A package for handling 3D geometry with a nice interface"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "GNU GPL v3"}
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
+classifiers = ["Programming Language :: Python :: 3",]
 dynamic = ["version", "dependencies", "optional-dependencies"]
 
 
