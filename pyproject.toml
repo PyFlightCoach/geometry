@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pfc_geometry"
+name = "pfc-geometry"
 authors = [{name = "Thomas David", email = "thomasdavid0@gmail.com"}]
 description = "A package for handling 3D geometry with a nice interface"
 readme = "README.md"
@@ -16,8 +16,12 @@ classifiers = ["Programming Language :: Python :: 3",]
 dynamic = ["version", "dependencies", "optional-dependencies"]
 
 
+[project.urls]
+
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 optional-dependencies = {dev = { file = ["requirements-dev.txt"] }}
 
 [tool.setuptools_scm]
+Homepage = "https://github.com/PyFlightCoach/geometry"
+Documentation = "https://pfcdocumentation.readthedocs.io/pyflightcoach/geometry.html"
