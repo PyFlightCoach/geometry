@@ -17,11 +17,11 @@ dynamic = ["version", "dependencies", "optional-dependencies"]
 
 
 [project.urls]
+Homepage = "https://github.com/PyFlightCoach/geometry"
+Documentation = "https://pfcdocumentation.readthedocs.io/pyflightcoach/geometry.html"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 optional-dependencies = {dev = { file = ["requirements-dev.txt"] }}
 
 [tool.setuptools_scm]
-Homepage = "https://github.com/PyFlightCoach/geometry"
-Documentation = "https://pfcdocumentation.readthedocs.io/pyflightcoach/geometry.html"
