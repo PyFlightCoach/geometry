@@ -27,11 +27,11 @@ class Transformation(Base):
                 args = np.concatenate([args[0].data,Q0().data],axis=1)
             elif isinstance(args[0], Quaternion):
                 args = np.concatenate([P0().data,args[0].data],axis=1)
-        if len(args) == 2:
+        elif len(args) == 2:
             _q = args[0] if isinstance(args[0], Quaternion) else args[1]
             _p = args[0] if isinstance(args[0], Point) else args[1]
             assert isinstance(_q, Quaternion) and isinstance(_p, Point), f'expected a Point and a Quaternion, got a {_p.__class__.__name__} and a {_q.__class__.__name__}'
-            args = np.concatenate([_p.data, _q.data], axis=1)
+            args = [np.concatenate([_p.data, _q.data], axis=1)]
         super().__init__(*args, **kwargs)
         self.p = Point(self.data[:,:3])
         self.q = Quaternion(self.data[:,3:])
