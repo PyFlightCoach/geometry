@@ -11,7 +11,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
 from .point import Point
-from .base import Base
+from .base import Base, dprep
 from geometry import PZ
 import numpy as np
 import numpy.typing as npt
@@ -253,7 +253,9 @@ class Quaternion(Base):
         # does the rotation reverse the Z axis?
         return np.sign(self.transform_point(PZ()).z) > 0
 
-
+    
+    
+        
 
 def Q0(count=1):
     return Quaternion.zero(count)
