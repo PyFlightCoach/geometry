@@ -172,7 +172,7 @@ def is_perpendicular(a: Point, b: Point, tolerance=1e-6):
 @ppmeth
 def min_angle_between(p1: Point, p2: Point):
     angle = angle_between(p1, p2) % np.pi
-    return min(angle, np.pi - angle)
+    return np.minimum(angle, np.pi - angle)
 
 def arbitrary_perpendicular(v: Point) -> Point:
     return Point(-v.y, v.x, 0).unit()

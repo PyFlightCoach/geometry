@@ -331,3 +331,4 @@ class Base:
 
         return pd.DataFrame(np.column_stack([xf, y]), columns=['freq'] + self.cols).set_index('freq')
 
+    
