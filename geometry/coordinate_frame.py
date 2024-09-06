@@ -9,7 +9,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-
+from __future__ import annotations
 from geometry import Point, Quaternion, PX, PY, PZ, P0
 from typing import List
 import numpy as np
@@ -33,7 +33,7 @@ class Coord(Base):
         self.z_axis=Point(self.data[:,9:12])
     
     @staticmethod
-    def from_axes(o:Point, x:Point, y:Point, z:Point):
+    def from_axes(o:Point, x:Point, y:Point, z:Point) -> Coord:
         assert len(o) == len(x) == len(y) == len(z)
         return Coord(np.concatenate([
             o.data,
@@ -43,25 +43,25 @@ class Coord(Base):
         ],axis=1))
 
     @staticmethod
-    def zero(count=1):
+    def zero(count=1) -> Coord:
         return Coord.from_nothing(count)
 
     @staticmethod
-    def from_nothing(count=1):
+    def from_nothing(count=1) -> Coord:
         return Coord.from_axes(P0(count), PX(1,count), PY(1,count), PZ(1,count))
 
     @staticmethod
-    def from_xy(origin: Point, x_axis: Point, y_axis: Point):
+    def from_xy(origin: Point, x_axis: Point, y_axis: Point) -> Coord:
         z_axis = x_axis.cross(y_axis)
         return Coord.from_axes(origin, x_axis, z_axis.cross(x_axis), z_axis)
 
     @staticmethod
-    def from_yz(origin: Point, y_axis: Point, z_axis: Point):
+    def from_yz(origin: Point, y_axis: Point, z_axis: Point) -> Coord:
         x_axis = y_axis.cross(z_axis)
         return Coord.from_axes(origin, x_axis, y_axis, x_axis.cross(y_axis))
 
     @staticmethod
-    def from_zx(origin: Point, z_axis: Point, x_axis: Point):
+    def from_zx(origin: Point, z_axis: Point, x_axis: Point) -> Coord:
         y_axis = z_axis.cross(x_axis)
         return Coord.from_axes(origin, y_axis.cross(z_axis), y_axis, z_axis)
 
@@ -71,7 +71,7 @@ class Coord(Base):
     def inverse_rotation_matrix(self):
         return Quaternion.from_rotation_matrix(self.rotation_matrix()).inverse().to_rotation_matrix()
 
-    def rotate(self, rotation=Quaternion):
+    def rotate(self, rotation=Quaternion) -> Coord:
         return Coord.from_axes(
             self.origin,
             rotation.transform_point(self.x_axis),
@@ -82,7 +82,7 @@ class Coord(Base):
     def __eq__(self, other):
         return self.data == other.data
 
-    def translate(self, point):
+    def translate(self, point) -> Coord:
         return Coord.from_axes(self.origin + point, self.x_axis, self.y_axis, self.z_axis)
 
     def axes(self):
