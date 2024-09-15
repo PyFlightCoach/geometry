@@ -253,7 +253,10 @@ class Quaternion(Base):
         # does the rotation reverse the Z axis?
         return np.sign(self.transform_point(PZ()).z) > 0
 
-    
+    def bearing(self, p: Point=None):
+        if p is None:
+            p = Point.X()
+        return self.transform_point(p).bearing()
     
         
 

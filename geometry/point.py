@@ -108,6 +108,9 @@ class Point(Base):
     def zeros(count=1):
         return Point(np.zeros((count,3)))
 
+    def bearing(self):
+        return np.arctan2(self.y, self.x)
+
 def Points(*args, **kwargs):
     warn("Points is deprecated, you can now just use Point", DeprecationWarning)
     return Point(*args, **kwargs)
