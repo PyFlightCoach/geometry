@@ -14,6 +14,8 @@ from .base import Base
 import numpy as np
 import pandas as pd
 from warnings import warn
+from numbers import Number
+import numpy.typing as npt
 
 
 class Point(Base):
@@ -62,16 +64,16 @@ class Point(Base):
         return abs(Point.angles(self, p2))
     
     @staticmethod
-    def X(value=1, count=1):
-        return Point(np.tile([value,0,0], (count, 1)))
+    def X(value: Number | npt.NDArray=1, count=1):
+        return np.tile(value, count) * Point(1,0,0)
 
     @staticmethod
     def Y(value=1, count=1):
-        return Point(np.tile([0,value,0], (count, 1)))
+        return np.tile(value, count) * Point(0,1,0)
 
     @staticmethod
     def Z(value=1, count=1):
-        return Point(np.tile([0,0,value], (count, 1)))
+        return np.tile(value, count) * Point(0,0,1)
 
     def rotate(self, rmat=np.ndarray):
         if len(rmat.shape) == 3:
@@ -139,7 +141,7 @@ def ppmeth(func):
 
 
 @ppmeth
-def cross(a, b) -> Point:
+def cross(a: Point, b: Point) -> Point:
     return Point(np.cross(a.data, b.data))
  
 

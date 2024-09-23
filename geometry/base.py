@@ -353,3 +353,9 @@ class Base:
                 self.data,
             )).ffill().bfill().to_numpy()
         )
+
+    def ffill(self):
+        return self.__class__(pd.DataFrame(self.data).ffill().to_numpy())
+
+    def bfill(self):
+        return self.__class__(pd.DataFrame(self.data).bfill().to_numpy())
