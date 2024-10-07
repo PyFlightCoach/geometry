@@ -22,9 +22,9 @@ class Time(Base):
             return Time(t, dt)
 
     @staticmethod
-    def uniform(duration: float, npoints: int | None) -> Time:
+    def uniform(duration: float, npoints: int | None, minpoints:int=1) -> Time:
         return Time.from_t(
-            np.linspace(0, duration, npoints if npoints else int(np.ceil(duration * 25)))
+            np.linspace(0, duration, npoints if npoints else max(int(np.ceil(duration * 25)), minpoints))
         )
 
     def scale(self, duration) -> Self:
