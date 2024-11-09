@@ -1,6 +1,5 @@
-from pytest import mark, approx
-from geometry import Coord, Transformation, Point, Quaternion, PX, PY, PZ, P0
 import numpy as np
+from geometry import P0, PX, PY, PZ, Coord, Point, Quaternion, Transformation
 from geometry.testing import assert_almost_equal
 
 
