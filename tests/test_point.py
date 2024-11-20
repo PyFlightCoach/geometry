@@ -4,7 +4,7 @@ import unittest
 from math import pi
 from pytest import mark, approx, fixture, raises
 import numpy as np
-from geometry.testing import assert_equal
+from geometry.checks import assert_equal
 
 def test_init():
     p = Point(1,2,3)

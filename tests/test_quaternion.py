@@ -2,7 +2,7 @@ from pytest import approx, mark
 from geometry.quaternion import Quaternion, Q0
 from geometry.point import Point, PX, PY, PZ, P0
 from geometry import Euler, Euldeg
-from geometry.testing import assert_almost_equal
+from geometry.checks import assert_almost_equal
 import pandas as pd
 import numpy as np
 

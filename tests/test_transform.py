@@ -1,6 +1,6 @@
 import numpy as np
 from geometry import P0, PX, PY, PZ, Coord, Point, Quaternion, Transformation
-from geometry.testing import assert_almost_equal
+from geometry.checks import assert_almost_equal
 
 
 def test_from_coords():
