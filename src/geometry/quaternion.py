@@ -10,6 +10,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
+from typing import Literal
 from .point import Point
 from .base import Base, dprep
 from geometry import PZ
@@ -258,7 +259,16 @@ class Quaternion(Base):
             p = Point.X()
         return self.transform_point(p).bearing()
     
-        
+    @staticmethod
+    def slerp(a: Quaternion, b: Quaternion):
+        """spherical linear interpolation"""
+        from rowan.interpolate import slerp
+        def doslerp(t):
+            xyzw = slerp(a.xyzw, b.xyzw, np.clip(t, 0, 1))
+            return Quaternion(xyzw[:,3], xyzw[:,0], xyzw[:,1], xyzw[:,2])
+        return doslerp
+
+
 
 def Q0(count=1):
     return Quaternion.zero(count)

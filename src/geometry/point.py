@@ -10,6 +10,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
+from typing import Literal
 from .base import Base
 import numpy as np
 import pandas as pd
@@ -112,6 +113,7 @@ class Point(Base):
 
     def bearing(self):
         return np.arctan2(self.y, self.x)
+
 
 def Points(*args, **kwargs):
     warn("Points is deprecated, you can now just use Point", DeprecationWarning)

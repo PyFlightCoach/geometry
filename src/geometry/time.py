@@ -4,6 +4,7 @@ from numbers import Number
 from typing import Self
 import numpy as np
 from time import time
+from geometry.utils import get_index
 
 
 class Time(Base):
@@ -41,3 +42,16 @@ class Time(Base):
 
     def extend(self):
         return Time.concatenate([self, Time(self.t[-1] + self.dt[-1], self.dt[-1])])
+
+    @staticmethod
+    def linterp(a:float, b:float):
+        """linear interpolation between two times"""
+        def _linterp(t:float):
+            new_t = a.t[0] + (b.t[0]-a.t[0])*t
+            return Time(new_t, b.t[0]-new_t)
+        return _linterp
+    
+    
+    def interpolate_t(self, t: float):
+        """get the floating point index at a given time"""
+        return get_index(self.t, t)

@@ -9,7 +9,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-
+from __future__ import annotations
 from typing import Self
 import numpy as np
 import numpy.typing as npt
@@ -359,3 +359,27 @@ class Base:
 
     def bfill(self):
         return self.__class__(pd.DataFrame(self.data).bfill().to_numpy())
+    
+    @classmethod
+    def linterp(Cls, a: Base, b: Base):
+        "linear interpolation"
+        return lambda t : a + (b - a) * np.clip(t, 0, 1)
+
+    def interpolate(self, loc: float, method: str):
+        """Interpolate between the two nearest indices given a floating point index
+        methods:
+        Quaternion = slerp,
+        Time = linterp
+        Point = linterp
+        """
+        if not hasattr(self, method):
+            raise AttributeError(f"Interpolation method {method} does not exist on {self.__class__.__name__}")
+        
+        i0=np.clip(np.floor(loc).astype(int), 0, len(self) - 1)
+        i1=np.clip(np.ceil(loc).astype(int), 0, len(self) - 1)
+        if i0==i1:
+            return self[i0]
+        return getattr(self.__class__, method)(
+            self[i0],
+            self[i1],
+        )(loc % 1)
