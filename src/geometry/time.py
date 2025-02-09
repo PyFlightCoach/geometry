@@ -55,3 +55,6 @@ class Time(Base):
     def interpolate_t(self, t: float):
         """get the floating point index at a given time"""
         return get_index(self.t, t)
+
+    def __add__(self, t: float):
+        return Time.from_t(self.t + t)
