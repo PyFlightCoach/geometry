@@ -90,7 +90,7 @@ class Point(Base):
         '''returns the rotation matrix based on a point representing Euler angles'''
         s = self.sin
         c = self.cos
-        return np.array([
+        return np.transpose(np.array([
             [
                 c.z * c.y, 
                 c.z * s.y * s.x - c.x * s.z, 
@@ -105,7 +105,22 @@ class Point(Base):
                 c.y * s.x, 
                 c.x * c.y
             ]
-        ]).T
+        ]), (2, 0, 1))
+
+    def matrix(self):
+        return np.einsum('i...,...->i...', self.data, np.identity(3))
+
+    @staticmethod
+    def from_matrix(matrix):
+        return Point(matrix[:,0,0], matrix[:,1,1], matrix[:,2,2])
+
+    def skew_symmetric(self):
+        o = np.zeros(len(self))
+        return np.transpose(np.array([
+            [o, -self.z, self.y],
+            [self.z, o, -self.x],
+            [-self.y, self.x, o]
+        ]), (2, 0, 1))
 
     @staticmethod
     def zeros(count=1):

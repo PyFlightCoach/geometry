@@ -247,10 +247,10 @@ class Base:
     def dot(self, other: Self) -> Self:
         return np.einsum("ij,ij->i", self.data, other)
 
-    def diff(self, dt: np.array) -> Self:
+    def diff(self, dt: npt.NDArray) -> Self:
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
-        assert len(dt) == len(self)
+        self, dt = Base.length_check(self, dt)
         return self.__class__(
             np.gradient(self.data, axis=0)
             / np.tile(dt, (len(self.__class__.cols), 1)).T

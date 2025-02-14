@@ -1,3 +1,4 @@
+from typing import Literal
 import numpy.typing as npt
 import numpy as np
 
@@ -11,8 +12,8 @@ def get_index(arr: npt.NDArray, value: float):
     
     res = np.argwhere(arr==value)
     if len(res):
-        return res[0][0]
-
+        return res[:,0]
+        #res[:,0]
     if value > arr[-1] or value < arr[0]:
         raise ValueError(f"Time {value} is out of bounds")
     
@@ -21,7 +22,7 @@ def get_index(arr: npt.NDArray, value: float):
     t0 = arr[i0]
     t1 = arr[i1]
     
-    return i0 + (value - t0) / (t1 - t0)
+    return np.array([i0 + (value - t0) / (t1 - t0)])
 
 
 def get_value(arr: npt.NDArray, index:float):
