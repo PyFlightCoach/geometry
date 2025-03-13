@@ -196,6 +196,19 @@ def test_closest_principal():
     )
 
 
+def test_squad():
+    p = Q0()
+    a = Euler(0,0,0)
+    b = Euler(90, 0, 0)
+    q = Euler(90, 0, 0)
+    res = Quaternion.concatenate([Quaternion.squad(p, a, b, q)(t) for t in np.linspace(0,1,100)])   
+    ps = res.transform_point(PY())
+    fig = ps.plot(mode="lines")
+    pis = Quaternion.concatenate([p, a,b,q]).transform_point(PY())
+    fig.add_traces(pis.plot(index=[0, 33,66,100],mode="markers").data)
+    fig.show()
+
+
 @mark.skip("to be thought about later")
 def test_backward_diff_problem():
     data = pd.read_csv('tests/quat_body_diff_test.csv')

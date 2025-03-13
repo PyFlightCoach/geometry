@@ -9,8 +9,9 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
-from typing import Self
+from typing import Self, Literal
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -247,14 +248,17 @@ class Base:
     def dot(self, other: Self) -> Self:
         return np.einsum("ij,ij->i", self.data, other)
 
-    def diff(self, dt: npt.NDArray) -> Self:
+    def diff(
+        self, dt: npt.NDArray, method: Literal["gradient", "diff"] = "gradient"
+    ) -> Self:
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
         self, dt = Base.length_check(self, dt)
-        return self.__class__(
-            np.gradient(self.data, axis=0)
-            / np.tile(dt, (len(self.__class__.cols), 1)).T
-        )
+        diff_method = np.gradient if method == "gradient" else np.diff
+
+        data = diff_method(self.data, axis=0)
+        dt = dt if method == "gradient" else dt[:-1]
+        return self.__class__(data / np.tile(dt, (len(self.__class__.cols), 1)).T)
 
     def to_pandas(self, prefix="", suffix="", columns=None, index=None):
         if columns is not None:
@@ -262,6 +266,10 @@ class Base:
         else:
             cols = [prefix + col + suffix for col in self.__class__.cols]
         return pd.DataFrame(self.data, columns=cols, index=index)
+
+    @property
+    def df(self):
+        return self.to_pandas()
 
     def tile(self, count) -> Self:
         return self.__class__(np.tile(self.data, (count, 1)))
@@ -347,11 +355,16 @@ class Base:
     def fill_zeros(self):
         """fills zero length rows with the previous or next non-zero value"""
         return self.__class__(
-            pd.DataFrame(np.where(
-                np.tile(abs(self) == 0, (3, 1)).T,
-                np.full(self.data.shape, np.nan),
-                self.data,
-            )).ffill().bfill().to_numpy()
+            pd.DataFrame(
+                np.where(
+                    np.tile(abs(self) == 0, (3, 1)).T,
+                    np.full(self.data.shape, np.nan),
+                    self.data,
+                )
+            )
+            .ffill()
+            .bfill()
+            .to_numpy()
         )
 
     def ffill(self):
@@ -359,11 +372,19 @@ class Base:
 
     def bfill(self):
         return self.__class__(pd.DataFrame(self.data).bfill().to_numpy())
-    
+
     @classmethod
     def linterp(Cls, a: Base, b: Base):
         "linear interpolation"
-        return lambda t : a + (b - a) * np.clip(t, 0, 1)
+        return lambda t: a + (b - a) * np.clip(t, 0, 1)
+
+    def spline_interp(self, index: npt.NDArray = None):
+        from scipy.interpolate import make_interp_spline
+
+        bspline = make_interp_spline(
+            np.arange(len(self)) if index is None else index, self.data, axis=0
+        )
+        return lambda i: self.__class__(bspline(i))
 
     def interpolate(self, loc: float, method: str):
         """Interpolate between the two nearest indices given a floating point index
@@ -373,13 +394,30 @@ class Base:
         Point = linterp
         """
         if not hasattr(self, method):
-            raise AttributeError(f"Interpolation method {method} does not exist on {self.__class__.__name__}")
-        
-        i0=np.clip(np.floor(loc).astype(int), 0, len(self) - 1)
-        i1=np.clip(np.ceil(loc).astype(int), 0, len(self) - 1)
-        if i0==i1:
+            raise AttributeError(
+                f"Interpolation method {method} does not exist on {self.__class__.__name__}"
+            )
+
+        i0 = np.clip(np.floor(loc).astype(int), 0, len(self) - 1)
+        i1 = np.clip(np.ceil(loc).astype(int), 0, len(self) - 1)
+        if i0 == i1:
             return self[i0]
         return getattr(self.__class__, method)(
             self[i0],
             self[i1],
         )(loc % 1)
+
+    def plot(self, index=None, **kwargs):
+        import plotly.graph_objects as go
+
+        fig = go.Figure()
+        for col in self.cols:
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len(self)) if index is None else index,
+                    y=getattr(self, col),
+                    **kwargs,
+                )
+            )
+        # df = self.to_pandas(self.__class__.__name__[0], index=index)
+        return fig

@@ -12,8 +12,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 from geometry import Base, Point, Quaternion, P0, Q0, Coord
 
 import numpy as np
-from typing import Union
-from typing import Self
+from typing import Self, Literal
 
 
 class Transformation(Base):
@@ -91,7 +90,7 @@ class Transformation(Base):
         )
 
     
-    def apply(self, oin: Union[Point, Quaternion, Self, Coord]):
+    def apply(self, oin: Point | Quaternion | Self | Coord):
         if isinstance(oin, Point):
             return self.point(oin)
         elif isinstance(oin, Quaternion):
@@ -102,7 +101,7 @@ class Transformation(Base):
             return Transformation(self.apply(oin.p), self.apply(oin.q))
         
 
-    def rotate(self, oin: Union[Point, Quaternion]):
+    def rotate(self, oin: Point | Quaternion):
         if isinstance(oin, Point):
             return self.q.transform_point(oin)
         elif isinstance(oin, Quaternion):
@@ -128,3 +127,14 @@ class Transformation(Base):
         outarr[:, 3,:3] = self.translation.data
         return outarr
         
+
+    def plot_3d(self, size: float=3, vis:Literal["coord", "plane"]="coord"):
+        import plotly.graph_objects as go
+        from plotting.traces import axestrace, meshes
+        import plotting.templates
+        fig = go.Figure(layout=dict(template="generic3d+clean_paper"))
+        if vis=="coord":
+            fig.add_traces(axestrace(self, length=size))
+        elif vis=="plane":
+            fig.add_traces(meshes(len(self), self, scale=size))
+        return fig

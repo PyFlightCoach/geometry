@@ -223,3 +223,9 @@ def test_string_value_access():
     
     with raises(AttributeError):
         assert abc.ased == 1
+
+
+def test_plot():
+    abc = ABC(np.random.random((10,3)))
+    plot = abc.plot()
+    plot2 = abc.plot(np.arange(len(abc))/10)

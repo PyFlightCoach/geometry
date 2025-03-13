@@ -117,3 +117,23 @@ def test_remove_outliers_fail():
     import pandas as pd
     p = Point(pd.read_csv('tests/test_remove_outliers.csv').iloc[:,1:])
     assert np.sum(np.isnan(p.data)) == 0
+    
+
+def test_bspline():
+    p = Point(np.array([
+        [0,0,0],
+        [1,0,0],
+        [2,1,0],
+        [3,1,0]
+    ]))
+
+    bspline = p.spline_interp()
+    
+    import plotly.express as px
+    xs = np.linspace(0,3,100)
+    splinepoints=bspline(xs)
+    
+    fig = splinepoints.plot3d(mode="lines")
+    fig.add_traces(p.plot3d().data)
+    fig.show()
+#    px.line(x=xs, y=.data).show()

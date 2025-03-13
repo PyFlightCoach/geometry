@@ -267,7 +267,13 @@ class Quaternion(Base):
             return Quaternion(xyzw[:,3], xyzw[:,0], xyzw[:,1], xyzw[:,2])
         return doslerp
 
-
+    @staticmethod
+    def squad(p: Quaternion, a: Quaternion, b: Quaternion, q: Quaternion):
+        from rowan.interpolate import squad
+        def dosquad(t):
+            xyzq = squad(p.xyzw, a.xyzw, b.xyzw, q.xyzw, np.clip(t, 0, 1))
+            return Quaternion(xyzq[:,3], xyzq[:,0], xyzq[:,1], xyzq[:,2])
+        return dosquad
 
 def Q0(count=1):
     return Quaternion.zero(count)
