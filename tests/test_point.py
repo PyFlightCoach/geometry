@@ -127,9 +127,8 @@ def test_bspline():
         [3,1,0]
     ]))
 
-    bspline = p.spline_interp()
+    bspline = p.bspline()
     
-    import plotly.express as px
     xs = np.linspace(0,3,100)
     splinepoints=bspline(xs)
     

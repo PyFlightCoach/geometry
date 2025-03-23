@@ -12,6 +12,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import Self, Literal
+from httpx import get
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -92,6 +93,14 @@ class Base:
                 raise TypeError
         else:
             raise TypeError(f"Empty {self.__class__.__name__} not allowed")
+
+    def to_numpy(self, cols: str | list = None):
+        cols = self.cols if cols is None else cols
+        return np.column_stack([getattr(self, c) for c in cols])
+
+    @classmethod
+    def from_numpy(Cls, data: npt.NDArray, cols: str | list):
+        return Cls(np.column_stack([data[:, cols.index(col)] for col in Cls.cols]))
 
     @classmethod
     def _clean_data(cls, data) -> npt.NDArray[np.float64]:
@@ -373,12 +382,33 @@ class Base:
     def bfill(self):
         return self.__class__(pd.DataFrame(self.data).bfill().to_numpy())
 
-    @classmethod
-    def linterp(Cls, a: Base, b: Base):
+    def linterp(
+        self,
+        index: npt.NDArray | pd.Index,
+        extrapolate: Literal["throw", "nearest"] = "throw",
+    ):
         "linear interpolation"
-        return lambda t: a + (b - a) * np.clip(t, 0, 1)
+        index = pd.Index(np.arange(len(self)) if index is None else index)
+        assert len(index) == len(self)
+        assert pd.Index(index).is_monotonic_increasing
 
-    def spline_interp(self, index: npt.NDArray = None):
+        def dolinterp(ts: npt.NDArray | Number):
+            starts = index.get_indexer(ts, method="ffill")
+            stops = index.get_indexer(ts, method="bfill")
+            if np.any(starts * stops < 0) and extrapolate=="throw":
+                raise Exception("Cannot extrapolate beyond parent range")
+            return self.__class__(np.column_stack(
+                [
+                    np.interp(
+                        ts, index, self.data[:, i], self.data[0, i], self.data[-1, i]
+                    )
+                    for i, col in enumerate(self.cols)
+                ]
+            ))
+            # return lambda t: a + (b - a) * np.clip(t, 0, 1)
+        return dolinterp
+    
+    def bspline(self, index: npt.NDArray | pd.Index = None):
         from scipy.interpolate import make_interp_spline
 
         bspline = make_interp_spline(
@@ -386,26 +416,16 @@ class Base:
         )
         return lambda i: self.__class__(bspline(i))
 
-    def interpolate(self, loc: float, method: str):
-        """Interpolate between the two nearest indices given a floating point index
-        methods:
-        Quaternion = slerp,
-        Time = linterp
-        Point = linterp
-        """
-        if not hasattr(self, method):
-            raise AttributeError(
-                f"Interpolation method {method} does not exist on {self.__class__.__name__}"
-            )
-
-        i0 = np.clip(np.floor(loc).astype(int), 0, len(self) - 1)
-        i1 = np.clip(np.ceil(loc).astype(int), 0, len(self) - 1)
-        if i0 == i1:
-            return self[i0]
-        return getattr(self.__class__, method)(
-            self[i0],
-            self[i1],
-        )(loc % 1)
+    def interpolate(self, index: npt.NDArray | pd.Index = None, method:str=None):
+        if method is None:
+            match (self.__class__.__name__):
+                case "Point":
+                    method="bspline"
+                case "Quaternion":
+                    method="slerp"
+                case "Time":
+                    method="linterp"
+        return getattr(self, method)(index)
 
     def plot(self, index=None, **kwargs):
         import plotly.graph_objects as go
@@ -416,6 +436,7 @@ class Base:
                 go.Scatter(
                     x=np.arange(len(self)) if index is None else index,
                     y=getattr(self, col),
+                    name=col,
                     **kwargs,
                 )
             )

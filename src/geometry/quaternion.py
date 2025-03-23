@@ -18,6 +18,7 @@ import numpy.typing as npt
 import pandas as pd
 from warnings import warn
 from numbers import Number
+from typing import Callable, Literal
 
 
 class Quaternion(Base):
@@ -179,10 +180,10 @@ class Quaternion(Base):
     def body_rotate(self, rate: Point) -> Quaternion:
         return (self * Quaternion.from_axis_angle(rate)).norm()
 
-    def diff(self, dt: Number | npt.NDArray) -> Point:
+    def diff(self, dt: Number | npt.NDArray = None) -> Point:
         """differentiate in the world frame"""
         if not pd.api.types.is_list_like(dt):
-            dt = np.full(len(self), dt)
+            dt = np.full(len(self), 1 if not dt else dt)
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
@@ -192,10 +193,10 @@ class Quaternion(Base):
         ) / dt[:-1]
         return Point(np.vstack([ps.data, ps.data[-1,:]]))
 
-    def body_diff(self, dt: Number | npt.NDArray) -> Point:
+    def body_diff(self, dt: Number | npt.NDArray = None) -> Point:
         """differentiate in the body frame"""
         if not pd.api.types.is_list_like(dt):
-            dt = np.full(len(self), dt)
+            dt = np.full(len(self), 1 if not dt else dt)
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
@@ -258,14 +259,56 @@ class Quaternion(Base):
             p = Point.X()
         return self.transform_point(p).bearing()
     
-    @staticmethod
-    def slerp(a: Quaternion, b: Quaternion):
-        """spherical linear interpolation"""
+    def slerp(self, index: pd.Index | npt.NDArray = None, extrapolate:Literal["throw", "nearest"]="throw"):
+        index = pd.Index(np.arange(len(self)) if index is None else index)
+
+        assert len(index) == len(self)
+        assert pd.Index(index).is_monotonic_increasing
         from rowan.interpolate import slerp
-        def doslerp(t):
-            xyzw = slerp(a.xyzw, b.xyzw, np.clip(t, 0, 1))
-            return Quaternion(xyzw[:,3], xyzw[:,0], xyzw[:,1], xyzw[:,2])
+        def doslerp(ts: npt.NDArray | Number) -> Quaternion:
+            starts = index.get_indexer(ts, method='ffill')
+            stops = index.get_indexer(ts, method='bfill')
+            
+            #case interpolate match (start == stop - 1)
+            odata = slerp(
+                self[starts].to_numpy("xyzw"),
+                self[stops].to_numpy("xyzw"),
+                (ts - index[starts]) / (index[stops] - index[starts]),
+                True 
+            )
+
+            #case exact match (start == stop)
+            exacts = starts == stops
+            odata[exacts] = self.to_numpy("xyzw")[starts[exacts]]
+
+            #case outside range above (start == index[-1], stop== -1)
+            aboves = stops==-1
+            if np.any(aboves):
+                if extrapolate=="throw":
+                    raise Exception("Cannot slerp beyond range")
+                else:
+                    odata[aboves] = self.to_numpy("xyzw")[-1, :]
+            #case outside range below (start == -1, stop==index[0])
+            belows = starts==-1
+            if np.any(belows):
+                if extrapolate=="throw":
+                    raise Exception("Cannot slerp beyond range")
+                else:
+                    odata[belows] = self.to_numpy("xyzw")[0, :]
+
+            return Quaternion.from_numpy( odata, "xyzw")
+            
         return doslerp
+
+    
+#    @staticmethod
+#    def slerp(a: Quaternion, b: Quaternion):
+#        """spherical linear interpolation"""
+#        from rowan.interpolate import slerp
+#        def doslerp(t):
+#            xyzw = slerp(a.xyzw, b.xyzw, np.clip(t, 0, 1))
+#            return Quaternion(xyzw[:,3], xyzw[:,0], xyzw[:,1], xyzw[:,2])
+#        return doslerp
 
     @staticmethod
     def squad(p: Quaternion, a: Quaternion, b: Quaternion, q: Quaternion):
@@ -274,6 +317,10 @@ class Quaternion(Base):
             xyzq = squad(p.xyzw, a.xyzw, b.xyzw, q.xyzw, np.clip(t, 0, 1))
             return Quaternion(xyzq[:,3], xyzq[:,0], xyzq[:,1], xyzq[:,2])
         return dosquad
+
+    def plot_3d(self, size: float=3, vis:Literal["coord", "plane"]="coord"):
+        from geometry import Transformation
+        return Transformation(self).plot_3d(size, vis)
 
 def Q0(count=1):
     return Quaternion.zero(count)

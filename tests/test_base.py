@@ -225,6 +225,20 @@ def test_string_value_access():
         assert abc.ased == 1
 
 
+def test_to_numpy():
+    p = ABC(1,2,3).tile(2)
+    cba = p.to_numpy("cba")
+    np.testing.assert_array_equal(ABC(cba).c, [1,1])
+    np.testing.assert_array_equal(ABC(cba).b, [2,2])
+    np.testing.assert_array_equal(ABC(cba).a, [3,3])
+
+
+def test_from_numpy():
+    p = ABC.from_numpy(np.tile(np.array([1,2,3]), (2,1)), "cba")
+    np.testing.assert_array_equal(p.c, [1,1])
+    np.testing.assert_array_equal(p.b, [2,2])
+    np.testing.assert_array_equal(p.a, [3,3])
+
 def test_plot():
     abc = ABC(np.random.random((10,3)))
     plot = abc.plot()

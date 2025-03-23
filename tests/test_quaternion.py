@@ -208,6 +208,17 @@ def test_squad():
     fig.add_traces(pis.plot(index=[0, 33,66,100],mode="markers").data)
     fig.show()
 
+def test_slerp():
+    qs = Quaternion.concatenate([Euldeg(0,0,90*i) for i in range(5)])
+    #qs.plot_3d(vis="plane").show()
+    q_halfs = qs.slerp()(np.arange(9)/2)
+    assert not np.any(np.isnan(q_halfs.data))
+    #I think this should not fail:
+    #np.testing.assert_array_almost_equal(q_halfs.body_diff().z[::2], qs.body_diff().z /2)
+    
+    pass
+
+
 
 @mark.skip("to be thought about later")
 def test_backward_diff_problem():

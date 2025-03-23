@@ -2,18 +2,11 @@ from geometry import Time
 from pytest import fixture, raises
 import numpy as np
 
-def test_time_linterp():
-    t = Time.from_t(np.arange(5))
-
-    t1 = Time.linterp(t[2], t[3])(0.5)
-    assert t1.t[0] == 2.5
-    assert t1.dt[0] == 0.5
-    
 
 def test_time_interpolate():
     t = Time.from_t(np.arange(5))
 
-    t1 = t.interpolate(2.5, 'linterp')
+    t1 = t.interpolate(t.t)([2.5])
 
     assert t1.t[0] == 2.5
     assert t1.dt[0] == 0.5
