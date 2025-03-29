@@ -37,3 +37,5 @@ def test_apply_index_slice():
     assert np.all(apply_index_slice(np.arange(10), slice(1, 5)) == np.array([1, 2, 3, 4, 5]))
     assert np.all(apply_index_slice(np.arange(10), slice(0.5, 1.5)) == np.array([0.5, 1, 1.5]))
     assert np.all(apply_index_slice(np.arange(10), slice(0.5, 3.5)) == np.array([0.5, 1,  2, 3, 3.5]))
+    assert np.all(apply_index_slice(np.arange(1), slice(0, 5)) == np.array([0]))
+    

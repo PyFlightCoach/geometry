@@ -83,16 +83,16 @@ def get_value(arr: npt.NDArray, index: Number):
 
 def apply_index_slice(index: npt.NDArray, value: slice | Number | npt.ArrayLike | None):
     if isinstance(value, slice):
-        middle = index[
+        middle = pd.Index(index)[
             int(np.ceil(value.start)) if value.start is not None else None : int(
                 np.ceil(value.stop)
             )
             if value.stop is not None
             else None
         ]
-        if value.start is not None and middle[0] != value.start:
+        if value.start is not None and middle[0] != value.start and value.start > index[0]:
             middle = np.concatenate([[get_value(index, value.start)], middle])
-        if value.stop is not None and middle[-1] != value.stop:
+        if value.stop is not None and middle[-1] != value.stop and value.stop < index[-1]:
             middle = np.concatenate([middle, [get_value(index, value.stop)]])
         return middle
     else:
