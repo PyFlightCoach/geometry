@@ -4,7 +4,7 @@ from numbers import Number
 from typing import Self
 import numpy as np
 from time import time
-
+from pudb import set_trace
 
 class Time(Base):
     cols = ["t", "dt"]
