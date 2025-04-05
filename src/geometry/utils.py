@@ -34,7 +34,7 @@ def handle_slice(fun: Callable[[npt.NDArray, Number], Number]):
 def get_index(
     arr: npt.NDArray,
     value: Number,
-    missing: float | Literal["raise"] = "throw",
+    missing: float | Literal["throw"] = "throw",
     direction: Literal["forward", "backward"] = "forward",
 ):
     """given a value, find the index of the first location in the aray,
