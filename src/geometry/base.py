@@ -12,7 +12,6 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import Self, Literal
-from httpx import get
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
