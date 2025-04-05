@@ -13,6 +13,7 @@ import math
 from geometry.base import Base
 from geometry.point import Point
 from typing import List, Union
+import numpy.typing as npt
 import numpy as np
 import pandas as pd
 
@@ -70,6 +71,15 @@ class GPS(Base):
             self.long + pin.y / (LOCFAC * safecos(latb)),
             self.alt - pin.z
         )
+
+    def bspline(self, index: npt.NDArray | pd.Index = None):
+        
+        def interpolator(i):
+            ps: Point = self - self[0]
+            ips = ps.bspline(index)(i)
+            return self[0].offset(ips)
+
+        return interpolator
 
 
 '''

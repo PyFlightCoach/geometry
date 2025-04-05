@@ -10,7 +10,9 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from typing import Self
+from __future__ import annotations
+from typing import Self, Literal
+from httpx import get
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -91,6 +93,14 @@ class Base:
                 raise TypeError
         else:
             raise TypeError(f"Empty {self.__class__.__name__} not allowed")
+
+    def to_numpy(self, cols: str | list = None):
+        cols = self.cols if cols is None else cols
+        return np.column_stack([getattr(self, c) for c in cols])
+
+    @classmethod
+    def from_numpy(Cls, data: npt.NDArray, cols: str | list):
+        return Cls(np.column_stack([data[:, cols.index(col)] for col in Cls.cols]))
 
     @classmethod
     def _clean_data(cls, data) -> npt.NDArray[np.float64]:
@@ -247,14 +257,17 @@ class Base:
     def dot(self, other: Self) -> Self:
         return np.einsum("ij,ij->i", self.data, other)
 
-    def diff(self, dt: np.array) -> Self:
+    def diff(
+        self, dt: npt.NDArray, method: Literal["gradient", "diff"] = "gradient"
+    ) -> Self:
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
-        assert len(dt) == len(self)
-        return self.__class__(
-            np.gradient(self.data, axis=0)
-            / np.tile(dt, (len(self.__class__.cols), 1)).T
-        )
+        self, dt = Base.length_check(self, dt)
+        diff_method = np.gradient if method == "gradient" else np.diff
+
+        data = diff_method(self.data, axis=0)
+        dt = dt if method == "gradient" else dt[:-1]
+        return self.__class__(data / np.tile(dt, (len(self.__class__.cols), 1)).T)
 
     def to_pandas(self, prefix="", suffix="", columns=None, index=None):
         if columns is not None:
@@ -262,6 +275,10 @@ class Base:
         else:
             cols = [prefix + col + suffix for col in self.__class__.cols]
         return pd.DataFrame(self.data, columns=cols, index=index)
+
+    @property
+    def df(self):
+        return self.to_pandas()
 
     def tile(self, count) -> Self:
         return self.__class__(np.tile(self.data, (count, 1)))
@@ -347,11 +364,16 @@ class Base:
     def fill_zeros(self):
         """fills zero length rows with the previous or next non-zero value"""
         return self.__class__(
-            pd.DataFrame(np.where(
-                np.tile(abs(self) == 0, (3, 1)).T,
-                np.full(self.data.shape, np.nan),
-                self.data,
-            )).ffill().bfill().to_numpy()
+            pd.DataFrame(
+                np.where(
+                    np.tile(abs(self) == 0, (3, 1)).T,
+                    np.full(self.data.shape, np.nan),
+                    self.data,
+                )
+            )
+            .ffill()
+            .bfill()
+            .to_numpy()
         )
 
     def ffill(self):
@@ -359,3 +381,64 @@ class Base:
 
     def bfill(self):
         return self.__class__(pd.DataFrame(self.data).bfill().to_numpy())
+
+    def linterp(
+        self,
+        index: npt.NDArray | pd.Index,
+        extrapolate: Literal["throw", "nearest"] = "throw",
+    ):
+        "linear interpolation"
+        index = pd.Index(np.arange(len(self)) if index is None else index)
+        assert len(index) == len(self)
+        assert pd.Index(index).is_monotonic_increasing
+
+        def dolinterp(ts: npt.NDArray | Number):
+            starts = index.get_indexer(ts, method="ffill")
+            stops = index.get_indexer(ts, method="bfill")
+            if np.any(starts * stops < 0) and extrapolate=="throw":
+                raise Exception("Cannot extrapolate beyond parent range")
+            return self.__class__(np.column_stack(
+                [
+                    np.interp(
+                        ts, index, self.data[:, i], self.data[0, i], self.data[-1, i]
+                    )
+                    for i, col in enumerate(self.cols)
+                ]
+            ))
+            # return lambda t: a + (b - a) * np.clip(t, 0, 1)
+        return dolinterp
+    
+    def bspline(self, index: npt.NDArray | pd.Index = None):
+        from scipy.interpolate import make_interp_spline
+
+        bspline = make_interp_spline(
+            np.arange(len(self)) if index is None else index, self.data, axis=0
+        )
+        return lambda i: self.__class__(bspline(i))
+
+    def interpolate(self, index: npt.NDArray | pd.Index = None, method:str=None):
+        if method is None:
+            match (self.__class__.__name__):
+                case "Point":
+                    method="bspline"
+                case "Quaternion":
+                    method="slerp"
+                case "Time":
+                    method="linterp"
+        return getattr(self, method)(index)
+
+    def plot(self, index=None, **kwargs):
+        import plotly.graph_objects as go
+
+        fig = go.Figure()
+        for col in self.cols:
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len(self)) if index is None else index,
+                    y=getattr(self, col),
+                    name=col,
+                    **kwargs,
+                )
+            )
+        # df = self.to_pandas(self.__class__.__name__[0], index=index)
+        return fig

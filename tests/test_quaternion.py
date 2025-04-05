@@ -6,7 +6,7 @@ from geometry.checks import assert_almost_equal
 import pandas as pd
 import numpy as np
 
-
+import quaternion
 
 def test_init():
     data = np.random.random((500,4))
@@ -194,6 +194,30 @@ def test_closest_principal():
             ])
         ).data
     )
+
+
+def test_squad():
+    p = Q0()
+    a = Euler(0,0,0)
+    b = Euler(90, 0, 0)
+    q = Euler(90, 0, 0)
+    res = Quaternion.concatenate([Quaternion.squad(p, a, b, q)(t) for t in np.linspace(0,1,100)])   
+    ps = res.transform_point(PY())
+    fig = ps.plot(mode="lines")
+    pis = Quaternion.concatenate([p, a,b,q]).transform_point(PY())
+    fig.add_traces(pis.plot(index=[0, 33,66,100],mode="markers").data)
+    fig.show()
+
+def test_slerp():
+    qs = Quaternion.concatenate([Euldeg(0,0,90*i) for i in range(5)])
+    #qs.plot_3d(vis="plane").show()
+    q_halfs = qs.slerp()(np.arange(9)/2)
+    assert not np.any(np.isnan(q_halfs.data))
+    #I think this should not fail:
+    #np.testing.assert_array_almost_equal(q_halfs.body_diff().z[::2], qs.body_diff().z /2)
+    
+    pass
+
 
 
 @mark.skip("to be thought about later")

@@ -12,8 +12,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 from geometry import Base, Point, Quaternion, P0, Q0, Coord
 
 import numpy as np
-from typing import Union
-from typing import Self
+from typing import Self, Literal
 
 
 class Transformation(Base):
@@ -24,17 +23,23 @@ class Transformation(Base):
             args = np.concatenate([P0().data,Q0().data],axis=1)
         elif len(args) == 1:
             if isinstance(args[0], Point):
-                args = np.concatenate([args[0].data,Q0().data],axis=1)
+                args = np.concatenate([args[0].data,Q0(len(args[0])).data],axis=1).T
             elif isinstance(args[0], Quaternion):
-                args = np.concatenate([P0().data,args[0].data],axis=1)
+                args = np.concatenate([P0(len(args[0])).data,args[0].data],axis=1).T
         elif len(args) == 2:
             _q = args[0] if isinstance(args[0], Quaternion) else args[1]
             _p = args[0] if isinstance(args[0], Point) else args[1]
             assert isinstance(_q, Quaternion) and isinstance(_p, Point), f'expected a Point and a Quaternion, got a {_p.__class__.__name__} and a {_q.__class__.__name__}'
-            args = [np.concatenate([_p.data, _q.data], axis=1)]
+            args = np.concatenate([_p.data, _q.data], axis=1).T
         super().__init__(*args, **kwargs)
-        self.p = Point(self.data[:,:3])
-        self.q = Quaternion(self.data[:,3:])
+
+    @property
+    def p(self):
+        return Point(self.data[:,:3])
+
+    @property
+    def q(self):    
+        return Quaternion(self.data[:,3:])
     
     def offset(self, p: Point):
         return Transformation(self.p + p, self.q)
@@ -91,7 +96,7 @@ class Transformation(Base):
         )
 
     
-    def apply(self, oin: Union[Point, Quaternion, Self, Coord]):
+    def apply(self, oin: Point | Quaternion | Self | Coord):
         if isinstance(oin, Point):
             return self.point(oin)
         elif isinstance(oin, Quaternion):
@@ -102,7 +107,7 @@ class Transformation(Base):
             return Transformation(self.apply(oin.p), self.apply(oin.q))
         
 
-    def rotate(self, oin: Union[Point, Quaternion]):
+    def rotate(self, oin: Point | Quaternion):
         if isinstance(oin, Point):
             return self.q.transform_point(oin)
         elif isinstance(oin, Quaternion):
@@ -128,3 +133,14 @@ class Transformation(Base):
         outarr[:, 3,:3] = self.translation.data
         return outarr
         
+
+    def plot_3d(self, size: float=3, vis:Literal["coord", "plane"]="coord"):
+        import plotly.graph_objects as go
+        from plotting.traces import axestrace, meshes
+        import plotting.templates
+        fig = go.Figure(layout=dict(template="generic3d+clean_paper"))
+        if vis=="coord":
+            fig.add_traces(axestrace(self, length=size))
+        elif vis=="plane":
+            fig.add_traces(meshes(len(self), self, scale=size))
+        return fig
