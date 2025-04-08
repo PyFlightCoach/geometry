@@ -36,12 +36,15 @@ def get_index(
     value: Number,
     missing: float | Literal["throw"] = "throw",
     direction: Literal["forward", "backward"] = "forward",
+    increasing: bool = None
 ):
     """given a value, find the index of the first location in the aray,
     if no exact match, linearly interpolate in the index
     assumes arr is monotonic increasing
-    raise value error outside of bounds and missing == "throw", else return missing"""
-    increasing = np.sign(np.diff(arr).mean())
+    raise value error outside of bounds and missing == "throw", else return missing
+    increasing, is the array going up or down, if not given it will be inferred from the data
+    """
+    increasing = np.sign(np.diff(arr).mean()) if increasing is None else increasing
     res = np.argwhere(arr == value)
     if len(res):
         return res[0 if direction == "forward" else -1, 0]
