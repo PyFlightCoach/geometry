@@ -40,9 +40,6 @@ class Transformation(Base):
     @property
     def q(self):    
         return Quaternion(self.data[:,3:])
-    
-    def offset(self, p: Point):
-        return Transformation(self.p + p, self.q)
 
     def __getattr__(self, name):
         if name in list("xyz"):
@@ -94,7 +91,6 @@ class Transformation(Base):
             coord_b.origin - coord_a.origin,
             -q1 * q2
         )
-
     
     def apply(self, oin: Point | Quaternion | Self | Coord):
         if isinstance(oin, Point):
@@ -115,6 +111,14 @@ class Transformation(Base):
         else:
             raise TypeError(f"expected a Point or a Quaternion, got a {oin.__class__.__name__}")
 
+    def offset(self, p: Point | Self):
+        if isinstance(p, Point):
+            return Transformation(self.p + p, self.q)
+        elif isinstance(p, self.__class__):
+            return Transformation(self.p + p.p, self.q * p.q)
+        else:
+            raise TypeError(f"expected a Point or a Transformation, got a {p.__class__.__name__}")
+
     def translate(self, point: Point):
         return point + self.p
 
@@ -134,11 +138,12 @@ class Transformation(Base):
         return outarr
         
 
-    def plot_3d(self, size: float=3, vis:Literal["coord", "plane"]="coord"):
+    def plot(self, fig=None, size: float=3, vis:Literal["coord", "plane"]="coord"):
         import plotly.graph_objects as go
         from plotting.traces import axestrace, meshes
-        import plotting.templates
-        fig = go.Figure(layout=dict(template="generic3d+clean_paper"))
+        if fig is None:
+            import plotting.templates
+            fig = go.Figure(layout=dict(template="generic3d+clean_paper"))
         if vis=="coord":
             fig.add_traces(axestrace(self, length=size))
         elif vis=="plane":

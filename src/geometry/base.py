@@ -252,6 +252,9 @@ class Base:
     def __neg__(self) -> Self:
         return self.__class__(-self.data)
 
+    def __pow__(self, power: Number) -> Self:
+        return self.__class__(self.data ** power)
+
     @dprep
     def dot(self, other: Self) -> Self:
         return np.einsum("ij,ij->i", self.data, other)

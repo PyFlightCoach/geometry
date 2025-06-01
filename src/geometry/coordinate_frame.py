@@ -87,3 +87,36 @@ class Coord(Base):
 
     def axes(self):
         return Point.concatenate([self.x_axis, self.y_axis, self.z_axis])
+
+    def plot(self, fig=None, scale=1, label: str = None):
+        import plotly.graph_objects as go
+        if fig is None:
+            fig = go.Figure(layout=dict(scene=dict(aspectmode="data")))
+
+        if len(self) > 1:
+            for c in self:
+                fig = c.plot(fig)
+            return fig
+        fig.add_trace(
+            go.Scatter3d(
+                x=self.origin.x,
+                y=self.origin.y,
+                z=self.origin.z,
+                mode="markers",
+                name="Origin",
+                marker=dict(size=5, color="black"),
+            )
+        )
+        colors = ["red", "green", "blue"]
+        for i, axis in enumerate([self.x_axis, self.y_axis, self.z_axis]):
+            fig.add_trace(
+                go.Scatter3d(
+                    x=[self.origin.x[0], (self.origin.x + axis.x * scale)[0]],
+                    y=[self.origin.y[0], (self.origin.y + axis.y * scale)[0]],
+                    z=[self.origin.z[0], (self.origin.z + axis.z * scale)[0]],
+                    mode="lines",
+                    name=f"{label or 'Axis'} {Point.cols[i]}",
+                    line=dict(width=2, color=colors.pop(0))
+                )
+            )
+        return fig

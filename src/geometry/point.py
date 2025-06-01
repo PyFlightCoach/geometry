@@ -12,6 +12,8 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import Literal
+
+from sqlalchemy import literal
 from .base import Base
 import numpy as np
 import pandas as pd
@@ -150,18 +152,45 @@ class Point(Base):
     def zeros(count=1):
         return Point(np.zeros((count, 3)))
 
+    @staticmethod
+    def circle_xy(radius: float, n: int) -> Point:
+        """
+        Generate points on a circle in the specified plane.
+        
+        :param radius: Radius of the circle.
+        :param n: Number of points to generate.
+        :return: Points on the circle as a Point object.
+        """
+        
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        return Point(radius * np.cos(angles), radius * np.sin(angles), np.zeros(n))
+
+    @staticmethod
+    def ellipse_xy(a: float, b: float, n: int) -> Point:
+        """
+        Generate points on an ellipse in the specified plane.
+        
+        :param a: Semi-major axis length.
+        :param b: Semi-minor axis length.
+        :param n: Number of points to generate.
+        :return: Points on the ellipse as a Point object.
+        """
+        
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        return Point(a * np.cos(angles), b * np.sin(angles), np.zeros(n))
+
     def bearing(self):
         return np.arctan2(self.y, self.x)
 
-    def plot3d(self, **kwargs):
+    def plot3d(self, fig=None, **kwargs):
         import plotly.graph_objects as go
-        fig = go.Figure()
 
-        fig.add_trace(go.Scatter3d(x=self.x, y=self.y, z=self.z, **kwargs))
-        fig.update_layout(
-            scene=dict(aspectmode="data"),
-        )
-        return fig
+        _fig = go.Figure() if fig is None else fig
+
+        _fig.add_trace(go.Scatter3d(x=self.x, y=self.y, z=self.z, **kwargs))
+        if fig is None:
+            _fig.update_layout(scene=dict(aspectmode="data"))
+        return _fig
 
     def plotxy(self):
         import plotly.express as px
@@ -183,6 +212,13 @@ class Point(Base):
         return px.line(self.df, x="z", y="x").update_layout(
             yaxis=dict(scaleanchor="x", scaleratio=1, title="x"), xaxis=dict(title="z")
         )
+
+    def arbitrary_perpendicular(self) -> Point:
+        min_axes = np.argmin(np.abs(self.data), axis=1)
+        cvecs = Point.concatenate(
+            [Point(*[1 if axis == i else 0 for i in np.arange(3)]) for axis in min_axes]
+        )
+        return cross(self, cvecs)
 
 
 def Points(*args, **kwargs):
@@ -260,10 +296,6 @@ def is_perpendicular(a: Point, b: Point, tolerance=1e-6):
 def min_angle_between(p1: Point, p2: Point):
     angle = angle_between(p1, p2) % np.pi
     return np.minimum(angle, np.pi - angle)
-
-
-def arbitrary_perpendicular(v: Point) -> Point:
-    return Point(-v.y, v.x, 0).unit()
 
 
 def vector_norm(point: Point):
