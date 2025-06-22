@@ -212,7 +212,12 @@ class Point(Base):
         return px.line(self.df, x="z", y="x").update_layout(
             yaxis=dict(scaleanchor="x", scaleratio=1, title="x"), xaxis=dict(title="z")
         )
+    def plotxz(self):
+        import plotly.express as px
 
+        return px.line(self.df, x="x", y="z").update_layout(
+            yaxis=dict(scaleanchor="x", scaleratio=1, title="x"), xaxis=dict(title="z")
+        )
     def arbitrary_perpendicular(self) -> Point:
         min_axes = np.argmin(np.abs(self.data), axis=1)
         cvecs = Point.concatenate(
