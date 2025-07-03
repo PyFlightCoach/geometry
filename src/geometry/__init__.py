@@ -11,6 +11,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from .base import Base
 from .time import Time
+from . import angles as angles
 from .point import *
 from .quaternion import *
 from .gps import GPS
@@ -27,13 +28,3 @@ def Euldeg(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs).radians())
 
 
-def angle_diff(a, b): 
-    d1 = a - b
-    d2 = d1 - 2 * np.pi
-    bd=np.abs(d2) < np.abs(d1)
-    d1[bd] = d2[bd]
-    d3 = d1 + 2 * np.pi
-    bd=np.abs(d3) < np.abs(d1)
-    d1[bd] = d3[bd]
-
-    return d1

@@ -12,7 +12,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 from .point import Point
 from .base import Base
-from geometry import PZ
+from geometry.point import PZ
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
