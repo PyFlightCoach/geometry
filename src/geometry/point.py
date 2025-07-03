@@ -12,8 +12,6 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import Literal
-
-from sqlalchemy import literal
 from .base import Base
 import numpy as np
 import pandas as pd
