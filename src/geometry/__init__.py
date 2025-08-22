@@ -18,6 +18,7 @@ from .gps import GPS
 from .coordinate_frame import Coord
 from .transformation import Transformation
 from .mass import Mass
+from .air import Air
 
 
 def Euler(*args, **kwargs) -> Quaternion:
