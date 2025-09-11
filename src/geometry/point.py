@@ -272,7 +272,7 @@ def angle_between(a: Point, b: Point) -> np.ndarray:
 
 @ppmeth
 def scalar_projection(a: Point, b: Point) -> Point:
-    return a.cos_angle_between(b) * abs(a)
+    return cos_angle_between(a, b) * abs(a)
 
 
 @ppmeth
