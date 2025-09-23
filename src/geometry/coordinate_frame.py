@@ -105,6 +105,7 @@ class Coord(Base):
                 mode="markers",
                 name="Origin",
                 marker=dict(size=5, color="black"),
+                showlegend=False
             )
         )
         colors = ["red", "green", "blue"]
@@ -116,7 +117,8 @@ class Coord(Base):
                     z=[self.origin.z[0], (self.origin.z + axis.z * scale)[0]],
                     mode="lines",
                     name=f"{label or 'Axis'} {Point.cols[i]}",
-                    line=dict(width=width, color=colors.pop(0))
+                    line=dict(width=width, color=colors.pop(0)),
+                    showlegend=False
                 )
             )
         return fig
