@@ -25,12 +25,12 @@ class Time(Base):
             return Time(t, dt)
 
     @staticmethod
-    def uniform(duration: float, npoints: int | None, minpoints: int = 1) -> Time:
+    def uniform(duration: float, npoints: int | None, minpoints: int = 1, freq=25) -> Time:
         return Time.from_t(
             np.linspace(
                 0,
                 duration,
-                npoints if npoints else max(int(np.ceil(duration * 25)), minpoints),
+                npoints if npoints else max(int(np.ceil(duration * freq)), minpoints),
             )
         )
 
