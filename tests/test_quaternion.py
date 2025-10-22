@@ -6,8 +6,6 @@ from geometry.checks import assert_almost_equal
 import pandas as pd
 import numpy as np
 
-import quaternion
-
 def test_init():
     data = np.random.random((500,4))
     qs = Quaternion(data)
