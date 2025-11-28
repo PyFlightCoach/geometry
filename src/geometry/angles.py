@@ -17,3 +17,8 @@ def difference(a, b):
     d1[bd] = d3[bd]
 
     return d1
+
+
+def wrap_to_pi(angles: npt.NDArray) -> npt.NDArray:
+    """Wrap angles to the range [-pi, pi]."""
+    return (angles + np.pi) % (2 * np.pi) - np.pi
