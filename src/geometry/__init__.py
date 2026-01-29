@@ -18,7 +18,8 @@ from .gps import GPS
 from .coordinate_frame import Coord
 from .transformation import Transformation
 from .mass import Mass
-
+from .air import Air
+from .angles import wrap_to_pi
 
 def Euler(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs))

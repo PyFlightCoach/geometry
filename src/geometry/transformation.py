@@ -9,6 +9,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
+from __future__ import annotations
 from geometry import Base, Point, Quaternion, P0, Q0, Coord
 
 import numpy as np
@@ -54,7 +55,7 @@ class Transformation(Base):
         raise AttributeError(name)
 
     @staticmethod
-    def build(p:Point, q:Quaternion):
+    def build(p:Point, q:Quaternion) -> Transformation:
         if len(p) == len(q):
             return Transformation(np.concatenate([
                 p.data,

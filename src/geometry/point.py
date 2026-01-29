@@ -272,7 +272,7 @@ def angle_between(a: Point, b: Point) -> np.ndarray:
 
 @ppmeth
 def scalar_projection(a: Point, b: Point) -> Point:
-    return a.cos_angle_between(b) * abs(a)
+    return cos_angle_between(a, b) * abs(a)
 
 
 @ppmeth
@@ -284,21 +284,28 @@ def vector_projection(a: Point, b: Point) -> Point:
 def vector_rejection(a: Point, b: Point) -> Point:
     return a - ((Point.dot(a, b)) / Point.dot(b, b)) * b
 
+@ppmeth
+def min_angle_between(p1: Point, p2: Point):
+    angle = angle_between(p1, p2) % np.pi
+    return np.minimum(angle, np.pi - angle)
 
 @ppmeth
 def is_parallel(a: Point, b: Point, tolerance=1e-6):
     return abs(a.cos_angle_between(b) - 1) < tolerance
 
+@ppmeth
+def is_anti_parallel(a: Point, b: Point, tolerance=1e-6):
+    return abs(a.cos_angle_between(-b) - 1) < tolerance
+
+
+@ppmeth
+def is_either_parallel(a: Point, b: Point, tolerance=1e-6):
+    return min_angle_between(a, b) < tolerance
+
 
 @ppmeth
 def is_perpendicular(a: Point, b: Point, tolerance=1e-6):
     return abs(a.dot(b)) < tolerance
-
-
-@ppmeth
-def min_angle_between(p1: Point, p2: Point):
-    angle = angle_between(p1, p2) % np.pi
-    return np.minimum(angle, np.pi - angle)
 
 
 def vector_norm(point: Point):

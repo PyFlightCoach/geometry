@@ -88,7 +88,7 @@ class Coord(Base):
     def axes(self):
         return Point.concatenate([self.x_axis, self.y_axis, self.z_axis])
 
-    def plot(self, fig=None, scale=1, label: str = None):
+    def plot(self, fig=None, scale=1, width=2, label: str = None):
         import plotly.graph_objects as go
         if fig is None:
             fig = go.Figure(layout=dict(scene=dict(aspectmode="data")))
@@ -105,6 +105,7 @@ class Coord(Base):
                 mode="markers",
                 name="Origin",
                 marker=dict(size=5, color="black"),
+                showlegend=False
             )
         )
         colors = ["red", "green", "blue"]
@@ -116,7 +117,8 @@ class Coord(Base):
                     z=[self.origin.z[0], (self.origin.z + axis.z * scale)[0]],
                     mode="lines",
                     name=f"{label or 'Axis'} {Point.cols[i]}",
-                    line=dict(width=2, color=colors.pop(0))
+                    line=dict(width=width, color=colors.pop(0)),
+                    showlegend=False
                 )
             )
         return fig
