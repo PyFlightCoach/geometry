@@ -265,9 +265,11 @@ class Base:
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
         self, dt = Base.length_check(self, dt)
-        diff_method = np.gradient if method == "gradient" else np.diff
+        if method=="gradient":
+            data = np.gradient(self.data, axis=0) if len(self) >1 else np.zeros(self.data.shape)
+        else:
+            data = np.diff(self.data, axis=0)
 
-        data = diff_method(self.data, axis=0)
         dt = dt if method == "gradient" else dt[:-1]
         return self.__class__(data / np.tile(dt, (len(self.__class__.cols), 1)).T)
 
