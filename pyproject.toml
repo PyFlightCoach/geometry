@@ -1,6 +1,6 @@
 [project]
 name = "pfc-geometry"
-version="0.2.21"
+version="0.2.22"
 description = "A library for working with 3D geometry."
 readme = "README.md"
 requires-python = ">=3.12"
