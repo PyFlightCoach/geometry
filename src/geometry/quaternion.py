@@ -300,6 +300,14 @@ class Quaternion(Base):
             
         return doslerp
 
+    def bounded_by(self, tol: float):
+        """Check all rotations within this dataset are within tol radians of the first one"""
+        
+        return len(self) == 1 or np.all(
+            [
+                abs(Quaternion.body_axis_rates(self[1:], self[0])) < tol
+            ]
+        )
     
 #    @staticmethod
 #    def slerp(a: Quaternion, b: Quaternion):
