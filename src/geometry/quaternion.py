@@ -36,6 +36,12 @@ class Quaternion(Base):
     def axis(self) -> Point:
         return Point(self.data[:,1:])
 
+    def almost_equal(self, other: Quaternion, tol: float = 1e-6) -> bool:
+        return np.abs(self.dot(other)) > 1 - tol
+    
+    def positive(self) -> Quaternion:
+        return Quaternion(np.where(self.data[:,0] < 0, -self.data, self.data))
+
     def norm(self) -> Quaternion:
         return self / abs(self)
 

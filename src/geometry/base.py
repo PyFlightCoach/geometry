@@ -93,6 +93,14 @@ class Base:
         else:
             raise TypeError(f"Empty {self.__class__.__name__} not allowed")
 
+    def to_snake(self, precision: int=2):
+        """returns a list of strings with the values of the cols rounded to the given precision 
+        and separated by underscores."""
+        d = self.data.copy().astype(float).round(precision)
+        d[d==0] = 0 
+        return [np.array2string(row, precision=precision, floatmode='fixed', separator="_").strip("[]") for row in d ]
+
+
     def to_numpy(self, cols: str | list = None):
         cols = self.cols if cols is None else cols
         return np.column_stack([getattr(self, c) for c in cols])

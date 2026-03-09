@@ -20,6 +20,8 @@ from .transformation import Transformation
 from .mass import Mass
 from .air import Air
 from .angles import wrap_to_pi
+from .checks import assert_equal, assert_almost_equal
+
 
 def Euler(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs))
@@ -28,4 +30,6 @@ def Euler(*args, **kwargs) -> Quaternion:
 def Euldeg(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs).radians())
 
-
+def upright():
+    """Return a quaternion representing an upright orientation"""
+    return Euldeg(180, 0, 0)
