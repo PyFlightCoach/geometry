@@ -93,13 +93,17 @@ class Base:
         else:
             raise TypeError(f"Empty {self.__class__.__name__} not allowed")
 
-    def to_snake(self, precision: int=2):
-        """returns a list of strings with the values of the cols rounded to the given precision 
+    def to_snake(self, precision: int = 2):
+        """returns a list of strings with the values of the cols rounded to the given precision
         and separated by underscores."""
         d = self.data.copy().astype(float).round(precision)
-        d[d==0] = 0 
-        return [np.array2string(row, precision=precision, floatmode='fixed', separator="_").strip("[]") for row in d ]
-
+        d[d == 0] = 0
+        return [
+            np.array2string(
+                row, precision=precision, floatmode="fixed", separator="_"
+            ).strip("[]")
+            for row in d
+        ]
 
     def to_numpy(self, cols: str | list = None):
         cols = self.cols if cols is None else cols
@@ -261,7 +265,7 @@ class Base:
         return self.__class__(-self.data)
 
     def __pow__(self, power: Number) -> Self:
-        return self.__class__(self.data ** power)
+        return self.__class__(self.data**power)
 
     @dprep
     def dot(self, other: Self) -> Self:
@@ -273,8 +277,12 @@ class Base:
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
         self, dt = Base.length_check(self, dt)
-        if method=="gradient":
-            data = np.gradient(self.data, axis=0) if len(self) >1 else np.zeros(self.data.shape)
+        if method == "gradient":
+            data = (
+                np.gradient(self.data, axis=0)
+                if len(self) > 1
+                else np.zeros(self.data.shape)
+            )
         else:
             data = np.diff(self.data, axis=0)
 
@@ -407,19 +415,26 @@ class Base:
         def dolinterp(ts: npt.NDArray | Number):
             starts = index.get_indexer(ts, method="ffill")
             stops = index.get_indexer(ts, method="bfill")
-            if np.any(starts * stops < 0) and extrapolate=="throw":
+            if np.any(starts * stops < 0) and extrapolate == "throw":
                 raise Exception("Cannot extrapolate beyond parent range")
-            return self.__class__(np.column_stack(
-                [
-                    np.interp(
-                        ts, index, self.data[:, i], self.data[0, i], self.data[-1, i]
-                    )
-                    for i, col in enumerate(self.cols)
-                ]
-            ))
+            return self.__class__(
+                np.column_stack(
+                    [
+                        np.interp(
+                            ts,
+                            index,
+                            self.data[:, i],
+                            self.data[0, i],
+                            self.data[-1, i],
+                        )
+                        for i, col in enumerate(self.cols)
+                    ]
+                )
+            )
             # return lambda t: a + (b - a) * np.clip(t, 0, 1)
+
         return dolinterp
-    
+
     def bspline(self, index: npt.NDArray | pd.Index = None):
         from scipy.interpolate import make_interp_spline
 
@@ -428,15 +443,15 @@ class Base:
         )
         return lambda i: self.__class__(bspline(i))
 
-    def interpolate(self, index: npt.NDArray | pd.Index = None, method:str=None):
+    def interpolate(self, index: npt.NDArray | pd.Index = None, method: str = None):
         if method is None:
-            match (self.__class__.__name__):
+            match self.__class__.__name__:
                 case "Point":
-                    method="bspline"
+                    method = "bspline"
                 case "Quaternion":
-                    method="slerp"
+                    method = "slerp"
                 case "Time":
-                    method="linterp"
+                    method = "linterp"
         return getattr(self, method)(index)
 
     def plot(self, index=None, **kwargs):
@@ -454,3 +469,14 @@ class Base:
             )
         # df = self.to_pandas(self.__class__.__name__[0], index=index)
         return fig
+
+    def where(self, condition, other):
+        """returns a new instance of self.__class__ where the values are taken from self where condition is False, and from other where condition is True."""
+        other = self.__class__.type_check(other)
+        self, other = self.__class__.length_check(self, other)
+        return self.__class__(
+            np.where(
+                np.tile(condition, (len(self.cols),1)).T, 
+                other.data, 
+                self.data)
+        )

@@ -243,3 +243,11 @@ def test_plot():
     abc = ABC(np.random.random((10,3)))
     plot = abc.plot()
     plot2 = abc.plot(np.arange(len(abc))/10)
+
+
+def test_where():
+    abc = ABC(np.array([[1,2,3], [0,0,0], [7,8,9], [4,5,6]]))
+    abc_where = abc.where(abs(abc) == 0, ABC(1,1,1))
+    
+    assert abc_where[0] == ABC(1,2,3)
+    assert abc_where[1] == ABC(1,1,1)
