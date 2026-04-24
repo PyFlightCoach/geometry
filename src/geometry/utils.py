@@ -94,7 +94,7 @@ def apply_index_slice(index: npt.NDArray, value: slice | Number | npt.ArrayLike 
             )
             if value.stop is not None
             else None
-        ]
+        ].values
         if value.start is not None and (len(middle) == 0 or middle[0] != value.start) and value.start > index[0]:
             middle = np.concatenate([[get_value(index, value.start)], middle])
         if value.stop is not None and (len(middle) == 0 or middle[-1] != value.stop) and value.stop < index[-1]:
