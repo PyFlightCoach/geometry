@@ -21,4 +21,8 @@ def difference(a, b):
 
 def wrap_to_pi(angles: npt.NDArray) -> npt.NDArray:
     """Wrap angles to the range [-pi, pi]."""
-    return (angles + np.pi) % (2 * np.pi) - np.pi
+    return np.where(
+        (angles > np.pi) | (angles <= -np.pi),
+        (angles + np.pi) % (2 * np.pi) - np.pi,
+        angles
+    )
