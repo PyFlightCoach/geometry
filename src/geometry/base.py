@@ -324,6 +324,15 @@ class Base:
     def full(cls, val, count):
         return cls(np.tile(val.data, (count, 1)))
 
+    def sum(self):
+        return self.__class__(self.data.sum(axis=0))
+
+    def mean(self):
+        return self.__class__(self.data.mean(axis=0))
+
+    def std(self):
+        return self.__class__(self.data.std(axis=0))
+
     def max(self):
         return self.__class__(self.data.max(axis=0))
 
