@@ -36,7 +36,7 @@ def get_index(
     value: Number,
     missing: float | Literal["throw"] = "throw",
     direction: Literal["forward", "backward"] = "forward",
-    increasing: bool = None
+    increasing: bool = None,
 ):
     """given a value, find the index of the first location in the aray,
     if no exact match, linearly interpolate in the index
@@ -86,19 +86,59 @@ def get_value(arr: npt.NDArray, index: Number):
 
 def apply_index_slice(index: npt.NDArray, value: slice | Number | npt.ArrayLike | None):
     if isinstance(value, slice):
-        if value.start is not None and value.stop is not None and value.start >= value.stop:
+        if (
+            value.start is not None
+            and value.stop is not None
+            and value.start >= value.stop
+        ):
             return np.array([], dtype=index.dtype)
         middle = pd.Index(index)[
-            int(np.ceil(value.start)) if value.start is not None else None : int(
-                np.ceil(value.stop)
+            (int(np.ceil(value.start)) if value.start is not None else None) : (
+                int(np.ceil(value.stop)) if value.stop is not None else None
             )
-            if value.stop is not None
-            else None
         ].values
-        if value.start is not None and (len(middle) == 0 or middle[0] != value.start) and value.start > index[0]:
+
+        if (
+            value.start is not None
+            and (len(middle) == 0 or middle[0] != value.start)
+            and value.start > index[0]
+        ):
             middle = np.concatenate([[get_value(index, value.start)], middle])
-        if value.stop is not None and (len(middle) == 0 or middle[-1] != value.stop) and value.stop < index[-1]:
+        if (
+            value.stop is not None
+            and (len(middle) == 0 or middle[-1] != value.stop)
+            and value.stop < index[-1]
+        ):
             middle = np.concatenate([middle, [get_value(index, value.stop)]])
         return middle
     else:
         return index[value]
+
+
+def round_slice(sli: npt.ArrayLike | slice | Number) -> npt.ArrayLike | slice | Number:
+    if isinstance(sli, slice):
+        return slice(
+            int(np.floor(sli.start)) if sli.start is not None else None,
+            int(np.ceil(sli.stop)) if sli.stop is not None else None,
+        )
+    elif isinstance(sli, Number):
+        return int(sli)
+    elif pd.api.types.is_list_like(sli):
+        return np.array([int(np.floor(s)) for s in sli[:-1]] + [int(np.ceil(sli[-1]))])
+    else:
+        raise ValueError(f"Cannot expand {sli}")
+
+def inclusive_slice(arr: npt.ArrayLike, sli: slice | Number | npt.ArrayLike | None) -> npt.ArrayLike:
+    """slice an array but include the right boundary"""
+    
+    if isinstance(sli, slice):
+        oarr = arr[sli]
+        return np.concatenate([oarr, [oarr[-1]+1]]) if sli.stop is not None else oarr
+    elif isinstance(sli, Number):
+        return arr[int(sli)]
+    elif pd.api.types.is_list_like(sli):
+        return arr[sli]
+    elif sli is None:
+        return arr
+    else:
+        raise ValueError(f"Cannot expand {sli}")
