@@ -84,8 +84,3 @@ class Time(Base):
 
     def __add__(self, t: float):
         return Time.from_t(self.t + t)
-
-    @property
-    def dt0(self):
-        """timesteps to integrate with"""
-        return np.concatenate([[0.0], self.dt[:-1]])

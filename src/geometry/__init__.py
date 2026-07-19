@@ -30,6 +30,7 @@ def Euler(*args, **kwargs) -> Quaternion:
 def Euldeg(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs).radians())
 
+
 def upright():
     """Return a quaternion representing an upright orientation"""
     return Euldeg(180, 0, 0)
