@@ -133,7 +133,7 @@ def inclusive_slice(arr: npt.ArrayLike, sli: slice | Number | npt.ArrayLike | No
     
     if isinstance(sli, slice):
         oarr = arr[sli]
-        return np.concatenate([oarr, [oarr[-1]+1]]) if sli.stop is not None else oarr
+        return np.concatenate([oarr, [oarr[-1]+1]]) if sli.stop is not None and sli.stop<=(len(arr)-1) else oarr
     elif isinstance(sli, Number):
         return arr[int(sli)]
     elif pd.api.types.is_list_like(sli):

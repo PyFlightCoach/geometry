@@ -247,7 +247,6 @@ def P0(count=1):
 
 def ppmeth(func):
     def wrapper(a, b, *args, **kwargs):
-        assert all([isinstance(arg, Point) for arg in args])
         assert len(a) == len(b) or len(a) == 1 or len(b) == 1
         return func(a, b, *args, **kwargs)
 
