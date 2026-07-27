@@ -36,7 +36,7 @@ def get_index(
     value: Number,
     missing: float | Literal["throw"] = "throw",
     direction: Literal["forward", "backward"] = "forward",
-    increasing: bool = None,
+    increasing: bool | None = None,
 ):
     """given a value, find the index of the first location in the aray,
     if no exact match, linearly interpolate in the index
