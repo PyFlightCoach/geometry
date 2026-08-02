@@ -410,38 +410,25 @@ class Base:
 
     def linterp(
         self,
-        index: npt.NDArray | pd.Index,
+        index: float | npt.NDArray | None = None,
         extrapolate: Literal["throw", "nearest"] = "throw",
     ):
-        "linear interpolation"
-        index = pd.Index(np.arange(len(self)) if index is None else index)
-        assert len(index) == len(self)
-        assert pd.Index(index).is_monotonic_increasing
+        """linear interpolation"""
+        index = np.arange(len(self)) if index is None else index
 
         def dolinterp(ts: npt.NDArray | Number):
-            starts = index.get_indexer(ts, method="ffill")
-            stops = index.get_indexer(ts, method="bfill")
-            if np.any(starts * stops < 0) and extrapolate == "throw":
+
+            if (
+                np.any(ts < index[0]) or np.any(ts > index[-1])
+            ) and extrapolate == "throw":
                 raise ExtrapolationError("Cannot extrapolate beyond parent range")
-            return self.__class__(
-                np.column_stack(
-                    [
-                        np.interp(
-                            ts,
-                            index,
-                            self.data[:, i],
-                            self.data[0, i],
-                            self.data[-1, i],
-                        )
-                        for i, col in enumerate(self.cols)
-                    ]
-                )
-            )
-            # return lambda t: a + (b - a) * np.clip(t, 0, 1)
+            _res = [np.interp(ts, index, getattr(self, _col)) for _col in self.cols]
+            return self.__class__(np.column_stack(_res))
 
         return dolinterp
 
     def bspline(self, index: npt.NDArray | pd.Index = None):
+
         from scipy.interpolate import make_interp_spline
 
         bspline = make_interp_spline(
@@ -449,7 +436,9 @@ class Base:
         )
         return lambda i: self.__class__(bspline(i))
 
-    def interpolate(self, index: npt.NDArray | pd.Index = None, method: str | None = None):
+    def interpolate(
+        self, index: npt.NDArray | pd.Index = None, method: str | None = None
+    ):
         if method is None:
             match self.__class__.__name__:
                 case "Point":
@@ -457,7 +446,7 @@ class Base:
                 case "Quaternion":
                     method = "slerp"
                 case "Time":
-                    method = "linterp"
+                    method = "linterp_recalculate_dt"
         return getattr(self, method)(index)
 
     def plot(self, index=None, **kwargs):
@@ -481,9 +470,5 @@ class Base:
         other = self.__class__.type_check(other)
         _self, other = self.__class__.length_check(self, other)
         return self.__class__(
-            np.where(
-                np.tile(condition, (len(_self.cols),1)).T, 
-                other.data, 
-                _self.data
-            )
+            np.where(np.tile(condition, (len(_self.cols), 1)).T, other.data, _self.data)
         )

@@ -10,19 +10,24 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-from .point import Point
-from .base import Base
-from geometry.point import PZ
+
+from numbers import Number
+from typing import ClassVar, Literal
+from warnings import warn
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from warnings import warn
-from numbers import Number
-from typing import Callable, Literal
+from rowan.interpolate import slerp, squad
+
+from geometry.point import PZ
+
+from .base import Base
+from .point import Point
 
 
 class Quaternion(Base):
-    cols=["w", "x", "y", "z"]
+    cols: ClassVar[list[str]] = ["w", "x", "y", "z"]
 
     @staticmethod
     def zero(count=1) -> Quaternion:
@@ -270,7 +275,7 @@ class Quaternion(Base):
 
         assert len(index) == len(self)
         assert pd.Index(index).is_monotonic_increasing
-        from rowan.interpolate import slerp
+        
         def doslerp(ts: npt.NDArray | Number) -> Quaternion:
             starts = index.get_indexer(ts, method='ffill')
             stops = index.get_indexer(ts, method='bfill')
@@ -303,8 +308,16 @@ class Quaternion(Base):
                     odata[belows] = self.to_numpy("xyzw")[0, :]
 
             return Quaternion.from_numpy( odata, "xyzw")
-            
+        
         return doslerp
+
+    def _safe_slerp(self, interp, t):
+        t = np.asarray(t)
+        mask = (t >= self._t_np[0]) & (t <= self._t_np[-1])
+        out = np.zeros((len(t), 4))
+        out[mask] = interp(t[mask])
+        out[~mask] = interp(self._t_np[0])  # or nearest quaternion
+        return out
 
     def bounded_by(self, tol: float):
         """Check all rotations within this dataset are within tol radians of the first one"""
@@ -326,7 +339,7 @@ class Quaternion(Base):
 
     @staticmethod
     def squad(p: Quaternion, a: Quaternion, b: Quaternion, q: Quaternion):
-        from rowan.interpolate import squad
+        
         def dosquad(t):
             xyzq = squad(p.xyzw, a.xyzw, b.xyzw, q.xyzw, np.clip(t, 0, 1))
             return Quaternion(xyzq[:,3], xyzq[:,0], xyzq[:,1], xyzq[:,2])

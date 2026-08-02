@@ -9,8 +9,8 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
-from .base import Base
-from .time import Time
+from .base import Base  
+from .time import Time  
 from . import angles as angles
 from .point import *
 from .quaternion import *
@@ -22,6 +22,7 @@ from .air import Air
 from .angles import wrap_to_pi
 from .checks import assert_equal, assert_almost_equal
 
+type GBase = Time | Point | Quaternion | GPS | Coord | Transformation | Mass | Air
 
 def Euler(*args, **kwargs) -> Quaternion:
     return Quaternion.from_euler(Point(*args, **kwargs))

@@ -1,7 +1,9 @@
+from collections.abc import Callable
 from numbers import Number
-from typing import Callable, Literal
-import numpy.typing as npt
+from typing import Literal
+
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 
@@ -44,6 +46,10 @@ def get_index(
     raise value error outside of bounds and missing == "throw", else return missing
     increasing, is the array going up or down, if not given it will be inferred from the data
     """
+
+#    index = np.searchsorted(arr, value, "left" )
+
+
     increasing = np.sign(np.diff(arr).mean()) if increasing is None else increasing
     res = np.argwhere(arr == value)
     if len(res):

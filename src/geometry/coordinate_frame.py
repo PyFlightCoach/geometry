@@ -10,15 +10,17 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-from geometry import Point, Quaternion, PX, PY, PZ, P0
-from typing import List
+
+from typing import ClassVar
+
 import numpy as np
-import pandas as pd
+
+from geometry import P0, PX, PY, PZ, Point, Quaternion
 from geometry.base import Base
 
 
 class Coord(Base):
-    cols = [
+    cols: ClassVar[list[str]] = [
         "ox", "oy", "oz",
         "x1", "y1", "z1",
         "x2", "y2", "z2",

@@ -11,18 +11,21 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
-from typing import Literal
-from .base import Base
-import numpy as np
-import pandas as pd
-from warnings import warn
+
 from numbers import Number
+from typing import ClassVar
+from warnings import warn
+
+import numpy as np
 import numpy.typing as npt
+import pandas as pd
+
+from .base import Base
 
 
 class Point(Base):
-    cols = ["x", "y", "z"]
-    from_np = [
+    cols: ClassVar[list[str]] = ["x", "y", "z"]
+    from_np: ClassVar[list[str]] = [
         "sin",
         "cos",
         "tan",
