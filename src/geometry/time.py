@@ -20,8 +20,12 @@ T = TypeVar("T", float, npt.NDArray[np.float64])
 class Time(Base):
     cols: ClassVar[list[str]] = ["t", "dt"]
 
+    def __post_init__(self):
+        self.t = self.t.astype(np.float64)
+        self.dt = self.dt.astype(np.float64)
+
     @staticmethod
-    def from_t(t: np.ndarray, dtend: float | None = None) -> Time:
+    def from_t(t: np.ndarray, dtend: float | None = 0.0) -> Time:
         if isinstance(t, Number):
             return Time(t, 1 / 25)
         else:
@@ -46,6 +50,10 @@ class Time(Base):
             )
         )
 
+    @property
+    def duration(self) -> float:
+        return self.t[-1] - self.t[0] + self.dt[-1]
+
     def scale(self, duration) -> Self:
         old_duration = self.t[-1] - self.t[0]
         sfac = duration / old_duration
@@ -58,14 +66,16 @@ class Time(Base):
     def now():
         return Time.from_t(time())
 
-    def extend(self):
+    def extend(self, dt: float | None = None) -> Time:
+        if dt is None:
+            if len(self.dt) == 1:
+                raise ValueError("Cannot extend time with no dt supplied if Time has only one point")
+            dt = self.dt[-2]
+        newdt = self.dt.copy()
+        newdt[-1] = dt
         return Time(
-            np.pad(
-                self.t,
-                (0, 1),
-                constant_values=self.t[-1] + self.dt[-1],
-            ),
-            np.pad(self.dt, (0, 1), mode="edge"),
+            np.pad(self.t, (0, 1), constant_values=self.t[-1] + dt),
+            np.pad(newdt, (0, 1), constant_values=0),
         )
 
     def linterp_recaclulate_dt(
@@ -75,19 +85,22 @@ class Time(Base):
     ):
         """linear interpolation"""
         index = np.arange(len(self)) if index is None else index
-        extened_t = np.pad(self.t, (0, 1), constant_values=self.t[-1] + self.dt[-1])
+        extended_t = self.extend()
 
         def dolinterp(new_index: npt.NDArray | Number):
             new_t = self.linterp(index, extrapolate)(new_index).t
-            next_index = np.searchsorted(extened_t, new_t, "right")
+            next_index = np.searchsorted(extended_t.t, new_t, "right")
 
-            new_dt = extened_t[next_index] - new_t
+            new_dt = extended_t.t[next_index] - new_t
             return Time(new_t, new_dt)
 
         return dolinterp
 
     def __add__(self, t: float):
-        return Time.from_t(self.t + t)
+        return Time(self.t + t, self.dt)
+
+    def __sub__(self, t: float):
+        return Time(self.t - t, self.dt)
 
     @staticmethod
     def concatenate(times: list[Time]) -> Time:
@@ -140,6 +153,7 @@ class Time(Base):
             )
 
     def get_value(self, index: Number | npt.NDArray) -> float | npt.NDArray:
+        index = np.where(index < 0, len(self) + index, index)
         return np.interp(
             index,
             np.arange(len(self.t)),
