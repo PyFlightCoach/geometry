@@ -30,14 +30,14 @@ def dprep(func):
     is the same as self, 1, or len(self) == 1 it should construct the arguments for the decorated function.
     """
 
-    def wrapper(self, b):
+    def wrapper(self, b, *args, **kwargs):
         bdat = self._dprep(b)
 
         if len(bdat) > 1 and len(self) == 1:
             a = self.tile(len(bdat))
         else:
             a = self
-        return func(a, bdat)
+        return func(a, bdat, *args, **kwargs)
 
     return wrapper
 
@@ -220,6 +220,13 @@ class Base:
         return self.__class__(self.data[[0, -1], :])
 
     @dprep
+    def almost_equal(self, other, tol: float = 1e-6) -> bool:
+
+        diff = np.abs(self.data - other.data)
+        return np.all(diff < tol)
+        
+
+    @dprep
     def __eq__(self, other):
         return np.all(self.data == other)
 
@@ -278,22 +285,26 @@ class Base:
         return np.einsum("ij,ij->i", self.data, other)
 
     def diff(
-        self, dt: npt.NDArray, method: Literal["gradient", "diff"] = "gradient"
+        self, dt: npt.NDArray, method: Literal["diff", "gradient"] = "diff"
     ) -> Self:
+        if len(self) == 1:
+            return self.__class__(np.zeros(self.data.shape))
+        
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
+        dt = np.tile(dt, (len(self.cols), 1)).T
         _self, dt = Base.length_check(self, dt)
-        if method == "gradient":
-            data = (
-                np.gradient(_self.data, axis=0)
-                if len(_self) > 1
-                else np.zeros(_self.data.shape)
-            )
+        _method = getattr(np, method) if isinstance(method, str) else method
+        
+        data = _method(_self.data, axis=0)
+        
+        if method=="diff":
+            data = np.divide(data, dt[:-1, :])
+            data = np.pad(data, ((0, 1), (0, 0)), mode="edge")
         else:
-            data = np.diff(_self.data, axis=0)
+            data = np.divide(data, dt)
 
-        dt = dt if method == "gradient" else dt[:-1]
-        return self.__class__(data / np.tile(dt, (len(self.__class__.cols), 1)).T)
+        return self.__class__(data)
 
     def to_pandas(self, prefix="", suffix="", columns=None, index=None):
         if columns is not None:

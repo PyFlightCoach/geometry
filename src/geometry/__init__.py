@@ -34,4 +34,4 @@ def Euldeg(*args, **kwargs) -> Quaternion:
 
 def upright():
     """Return a quaternion representing an upright orientation"""
-    return Euldeg(180, 0, 0)
+    return Quaternion(0.0, 1.0, 0.0, 0.0)

@@ -25,7 +25,7 @@ class Time(Base):
         self.dt = self.dt.astype(np.float64)
 
     @staticmethod
-    def from_t(t: np.ndarray, dtend: float | None = 0.0) -> Time:
+    def from_t(t: np.ndarray) -> Time:
         if isinstance(t, Number):
             return Time(t, 1 / 25)
         else:
@@ -34,7 +34,7 @@ class Time(Base):
             else:
                 arr = np.diff(t)
                 dt = np.pad(
-                    arr, (0, 1), constant_values=dtend if dtend is not None else arr[-1]
+                    arr, (0, 1), constant_values=arr[-1]
                 )
             return Time(t, dt)
 
@@ -52,7 +52,7 @@ class Time(Base):
 
     @property
     def duration(self) -> float:
-        return self.t[-1] - self.t[0] + self.dt[-1]
+        return self.t[-1] - self.t[0]
 
     def scale(self, duration) -> Self:
         old_duration = self.t[-1] - self.t[0]

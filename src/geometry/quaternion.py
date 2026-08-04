@@ -20,9 +20,9 @@ import numpy.typing as npt
 import pandas as pd
 from rowan.interpolate import slerp, squad
 
-from geometry.point import PZ
+from geometry.point import P0, PZ
 
-from .base import Base
+from .base import Base, dprep
 from .point import Point
 
 
@@ -41,8 +41,9 @@ class Quaternion(Base):
     def axis(self) -> Point:
         return Point(self.data[:,1:])
 
+    @dprep
     def almost_equal(self, other: Quaternion, tol: float = 1e-6) -> bool:
-        return np.abs(self.dot(other)) > 1 - tol
+        return np.all(np.abs(self.dot(other)) > 1 - tol)
     
     def positive(self) -> Quaternion:
         return Quaternion(np.where(self.data[:,0] < 0, -self.data, self.data))
@@ -54,7 +55,10 @@ class Quaternion(Base):
         return Quaternion(self.w, -self.x, -self.y, -self.z)
 
     def inverse(self):
-        return self.conjugate().norm()
+        if hasattr(self, "_inverse"):
+            return self._inverse
+        self._inverse = self.conjugate().norm()
+        return self._inverse
 
     def __mul__(self, other: Number | Quaternion | npt.NDArray) -> Quaternion:
         if isinstance(other, Quaternion):
@@ -191,32 +195,26 @@ class Quaternion(Base):
     def body_rotate(self, rate: Point) -> Quaternion:
         return (self * Quaternion.from_axis_angle(rate)).norm()
 
-    def diff(self, dt: Number | npt.NDArray = None) -> Point:
+    def diff(self, dt: Number | npt.NDArray = None, mode: Literal["world", "body"] = "world") -> Point:
         """differentiate in the world frame"""
+        if len(self) == 1:
+            return P0()
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), 1 if not dt else dt)
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
-        ps = Quaternion._axis_rates(
+        method = Quaternion._axis_rates if mode == "world" else Quaternion._body_axis_rates
+
+        ps = method(
             Quaternion(self.data[:-1, :]),
             Quaternion(self.data[1:, :])
         ) / dt[:-1]
-        return Point(np.vstack([ps.data, ps.data[-1,:]]))
+
+        return Point(np.pad(ps.data, ((0,1), (0, 0)), mode="edge"))
 
     def body_diff(self, dt: Number | npt.NDArray = None) -> Point:
-        """differentiate in the body frame"""
-        if not pd.api.types.is_list_like(dt):
-            dt = np.full(len(self), 1 if not dt else dt)
-        assert len(dt) == len(self)
-        dt = dt * len(dt) / (len(dt) - 1)
-
-        ps = Quaternion.body_axis_rates(
-            Quaternion(self.data[:-1, :]),
-            Quaternion(self.data[1:, :])
-        ) / dt[:-1]
-        return Point(np.vstack([ps.data, ps.data[-1,:]]))
-
+        return self.diff(dt, "body")
     
     def to_rotation_matrix(self) -> npt.NDArray[np.float64]:
         """http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
@@ -270,15 +268,16 @@ class Quaternion(Base):
             p = Point.X()
         return self.transform_point(p).bearing()
     
-    def slerp(self, index: pd.Index | npt.NDArray = None, extrapolate:Literal["throw", "nearest"]="throw"):
-        index = pd.Index(np.arange(len(self)) if index is None else index)
+    def slerp(self, index: npt.NDArray = None, extrapolate:Literal["throw", "nearest"]="throw"):
+        index = np.asarray(np.arange(len(self)) if index is None else index)
 
         assert len(index) == len(self)
-        assert pd.Index(index).is_monotonic_increasing
+        assert np.all(index[1:] >= index[:-1])
         
         def doslerp(ts: npt.NDArray | Number) -> Quaternion:
-            starts = index.get_indexer(ts, method='ffill')
-            stops = index.get_indexer(ts, method='bfill')
+            ts = np.atleast_1d(ts)
+            starts = np.searchsorted(index, ts, side="right") - 1
+            stops = np.searchsorted(index, ts, side="left")
             
             #case interpolate match (start == stop - 1)
             odata = slerp(

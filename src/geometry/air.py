@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from geometry.base import Base
 
 R = 287.058
@@ -9,7 +11,7 @@ def get_rho(pressure, temperature):
 
 
 class Air(Base):
-    cols = ["P", "T", "rho"]
+    cols: ClassVar[list[str]] = ["P", "T", "rho"]
 
     @staticmethod
     def iso_sea_level(length: int):
