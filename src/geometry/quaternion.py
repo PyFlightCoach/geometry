@@ -280,16 +280,18 @@ class Quaternion(Base):
             stops = np.searchsorted(index, ts, side="left")
             
             #case interpolate match (start == stop - 1)
-            odata = slerp(
-                self[starts].to_numpy("xyzw"),
-                self[stops].to_numpy("xyzw"),
-                (ts - index[starts]) / (index[stops] - index[starts]),
+            odata = self.to_numpy("xyzw")[starts]
+            to_interp = starts != stops
+            #odata[exacts] = self.to_numpy("xyzw")[starts[exacts]]
+        
+            odata[to_interp] = slerp(
+                self[starts[to_interp]].to_numpy("xyzw"),
+                self[stops[to_interp]].to_numpy("xyzw"),
+                (ts[to_interp] - index[starts[to_interp]]) / (index[stops[to_interp]] - index[starts[to_interp]]),
                 True 
             )
-
             #case exact match (start == stop)
-            exacts = starts == stops
-            odata[exacts] = self.to_numpy("xyzw")[starts[exacts]]
+            
 
             #case outside range above (start == index[-1], stop== -1)
             aboves = stops==-1
