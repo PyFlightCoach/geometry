@@ -9,6 +9,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 
 from numbers import Number
@@ -18,12 +19,12 @@ from warnings import warn
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from rowan.interpolate import slerp, squad
+from rowan.interpolate import slerp
 
-from geometry.point import P0, PZ
+from geometry.point import P0, PZ, Point
+from geometry.time import Time
 
-from .base import Base, dprep
-from .point import Point
+from .base import Base, ExtrapolationError, dprep
 
 
 class Quaternion(Base):
@@ -31,7 +32,7 @@ class Quaternion(Base):
 
     @staticmethod
     def zero(count=1) -> Quaternion:
-        return Quaternion(np.tile([1,0,0,0], (count,1)))
+        return Quaternion(np.tile([1, 0, 0, 0], (count, 1)))
 
     @property
     def xyzw(self):
@@ -39,14 +40,14 @@ class Quaternion(Base):
 
     @property
     def axis(self) -> Point:
-        return Point(self.data[:,1:])
+        return Point(self.data[:, 1:])
 
     @dprep
     def almost_equal(self, other: Quaternion, tol: float = 1e-6) -> bool:
         return np.all(np.abs(self.dot(other)) > 1 - tol)
-    
+
     def positive(self) -> Quaternion:
-        return Quaternion(np.where(self.data[:,0] < 0, -self.data, self.data))
+        return Quaternion(np.where(self.data[:, 0] < 0, -self.data, self.data))
 
     def norm(self) -> Quaternion:
         return self / abs(self)
@@ -71,48 +72,50 @@ class Quaternion(Base):
             return Quaternion(self.data * other)
         elif isinstance(other, np.ndarray):
             return Quaternion(self.data * self._dprep(other))
-                        
+
         raise TypeError(f"cant multiply a quaternion by a {other.__class__.__name__}")
 
     def __rmul__(self, other) -> Quaternion:
-        #either it should have been picked up by the left hand object or it should commute
-        return self * other   
+        # either it should have been picked up by the left hand object or it should commute
+        return self * other
 
     def transform_point(self, point: Point) -> Point:
-        '''Transform a point by the rotation described by self'''
+        """Transform a point by the rotation described by self"""
         a, b = Base.length_check(self, point)
-        
+
         qdata = np.column_stack((np.zeros(len(a)), b.data))
 
         return (a * Quaternion(qdata) * a.inverse()).axis
-  
+
     @staticmethod
     def from_euler(eul: Point) -> Quaternion:
-        '''Create a quaternion from a Point of Euler angles order z, y, x'''
+        """Create a quaternion from a Point of Euler angles order z, y, x"""
         eul = Point.type_check(eul).unwrap()
         half = eul * 0.5
         c = half.cos
         s = half.sin
 
         return Quaternion(
-            np.array([
-                c.y * c.z * c.x + s.y * s.z * s.x,
-                c.y * c.z * s.x - s.y * s.z * c.x,
-                s.y * c.z * c.x + c.y * s.z * s.x,
-                c.y * s.z * c.x - s.y * c.z * s.x
-            ]).T
+            np.array(
+                [
+                    c.y * c.z * c.x + s.y * s.z * s.x,
+                    c.y * c.z * s.x - s.y * s.z * c.x,
+                    s.y * c.z * c.x + c.y * s.z * s.x,
+                    c.y * s.z * c.x - s.y * c.z * s.x,
+                ]
+            ).T
         )
 
     def to_euler(self) -> Point:
-        '''Create a Point of Euler angles order z,y,x'''
+        """Create a Point of Euler angles order z,y,x"""
         sinr_cosp = 2 * (self.w * self.x + self.y * self.z)
         cosr_cosp = 1 - 2 * (self.x * self.x + self.y * self.y)
         roll = np.arctan2(sinr_cosp, cosr_cosp)
 
         sinp = 2 * (self.w * self.y - self.z * self.x)
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid="ignore"):
             pitch = np.arcsin(sinp)
-                
+
         siny_cosp = 2 * (self.w * self.z + self.x * self.y)
         cosy_cosp = 1 - 2 * (self.y * self.y + self.z * self.z)
         yaw = np.arctan2(siny_cosp, cosy_cosp)
@@ -122,7 +125,7 @@ class Quaternion(Base):
             pitch[test] = np.copysign(np.pi / 2, sinp[test])
             yaw[test] = np.zeros(len(sinp[test]))
 
-            roll[test] = 2* np.arctan2(self.x[test],self.w[test])
+            roll[test] = 2 * np.arctan2(self.x[test], self.w[test])
         return Point(roll, pitch, yaw)
 
     @staticmethod
@@ -136,15 +139,13 @@ class Quaternion(Base):
             baxangles = Point(axangles.data[angles >= small])
             bangles = angles[angles >= small]
 
-            s = np.sin(bangles/2)
-            c = np.cos(bangles/2)
+            s = np.sin(bangles / 2)
+            c = np.cos(bangles / 2)
             axis = baxangles / bangles
 
-            qdat[angles >= small] = np.array([
-                c, axis.x * s, axis.y * s, axis.z * s
-            ]).T
+            qdat[angles >= small] = np.array([c, axis.x * s, axis.y * s, axis.z * s]).T
 
-        #qdat[abs(Quaternions(qdat)) < .001] = np.array([[1, 0, 0, 0]])
+        # qdat[abs(Quaternions(qdat)) < .001] = np.array([[1, 0, 0, 0]])
         return Quaternion(qdat)
 
     def to_axis_angle(self) -> Point:
@@ -152,7 +153,7 @@ class Quaternion(Base):
         b = (-self)._to_axis_angle()
 
         res = a.data
-        replocs = abs(a)>abs(b)
+        replocs = abs(a) > abs(b)
         res[replocs, :] = b.data[replocs, :]
 
         return Point(res)
@@ -162,9 +163,9 @@ class Quaternion(Base):
         angle = 2 * np.arccos(self.w)
         s = np.sqrt(1 - self.w**2)
         np.array(s)[np.array(s) < 1e-6] = 1.0
-        with np.errstate(divide="ignore", invalid='ignore'):
+        with np.errstate(divide="ignore", invalid="ignore"):
             sangle = angle / s
-            sangle[sangle==np.inf] = 0
+            sangle[sangle == np.inf] = 0
             sangle[np.isnan(sangle)] = 0
         res = self.axis * sangle
         return res
@@ -172,22 +173,22 @@ class Quaternion(Base):
     @staticmethod
     def axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = qdot * q.conjugate()
-        return wdash.norm().to_axis_angle() 
+        return wdash.norm().to_axis_angle()
 
     @staticmethod
     def _axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = qdot * q.conjugate()
-        return wdash.norm()._to_axis_angle() 
+        return wdash.norm()._to_axis_angle()
 
     @staticmethod
     def body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = q.conjugate() * qdot
-        return wdash.norm().to_axis_angle() 
+        return wdash.norm().to_axis_angle()
 
     @staticmethod
     def _body_axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
         wdash = q.conjugate() * qdot
-        return wdash.norm()._to_axis_angle() 
+        return wdash.norm()._to_axis_angle()
 
     def rotate(self, rate: Point) -> Quaternion:
         return (Quaternion.from_axis_angle(rate) * self).norm()
@@ -195,7 +196,9 @@ class Quaternion(Base):
     def body_rotate(self, rate: Point) -> Quaternion:
         return (self * Quaternion.from_axis_angle(rate)).norm()
 
-    def diff(self, dt: Number | npt.NDArray = None, mode: Literal["world", "body"] = "world") -> Point:
+    def diff(
+        self, dt: Number | npt.NDArray = None, mode: Literal["world", "body"] = "world"
+    ) -> Point:
         """differentiate in the world frame"""
         if len(self) == 1:
             return P0()
@@ -204,18 +207,20 @@ class Quaternion(Base):
         assert len(dt) == len(self)
         dt = dt * len(dt) / (len(dt) - 1)
 
-        method = Quaternion._axis_rates if mode == "world" else Quaternion._body_axis_rates
+        method = (
+            Quaternion._axis_rates if mode == "world" else Quaternion._body_axis_rates
+        )
 
-        ps = method(
-            Quaternion(self.data[:-1, :]),
-            Quaternion(self.data[1:, :])
-        ) / dt[:-1]
+        ps = (
+            method(Quaternion(self.data[:-1, :]), Quaternion(self.data[1:, :]))
+            / dt[:-1]
+        )
 
-        return Point(np.pad(ps.data, ((0,1), (0, 0)), mode="edge"))
+        return Point(np.pad(ps.data, ((0, 1), (0, 0)), mode="edge"))
 
     def body_diff(self, dt: Number | npt.NDArray = None) -> Point:
         return self.diff(dt, "body")
-    
+
     def to_rotation_matrix(self) -> npt.NDArray[np.float64]:
         """http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
         https://github.com/mortlind/pymath3d/blob/master/math3d/quaternion.py
@@ -223,11 +228,13 @@ class Quaternion(Base):
         n = self.norm()
         s, x, y, z = n.w, n.x, n.y, n.z
         x2, y2, z2 = n.x**2, n.y**2, n.z**2
-        return np.array([
-            [1 - 2 * (y2 + z2), 2 * x * y - 2 * s * z, 2 * s * y + 2 * x * z],
-            [2 * x * y + 2 * s * z, 1 - 2 * (x2 + z2), -2 * s * x + 2 * y * z],
-            [-2 * s * y + 2 * x * z, 2 * s * x + 2 * y * z, 1 - 2 * (x2 + y2)]
-        ]).T
+        return np.array(
+            [
+                [1 - 2 * (y2 + z2), 2 * x * y - 2 * s * z, 2 * s * y + 2 * x * z],
+                [2 * x * y + 2 * s * z, 1 - 2 * (x2 + z2), -2 * s * x + 2 * y * z],
+                [-2 * s * y + 2 * x * z, 2 * s * x + 2 * y * z, 1 - 2 * (x2 + y2)],
+            ]
+        ).T
 
     @staticmethod
     def from_rotation_matrix(matrix: npt.NDArray[np.float64]) -> Quaternion:
@@ -239,77 +246,107 @@ class Quaternion(Base):
                 q = [m[1, 2] - m[2, 1], t, m[0, 1] + m[1, 0], m[2, 0] + m[0, 2]]
             else:
                 t = 1 - m[0, 0] + m[1, 1] - m[2, 2]
-                q = [m[2, 0] - m[0, 2], m[0, 1] +
-                     m[1, 0], t, m[1, 2] + m[2, 1]]
+                q = [m[2, 0] - m[0, 2], m[0, 1] + m[1, 0], t, m[1, 2] + m[2, 1]]
         else:
             if m[0, 0] < -m[1, 1]:
                 t = 1 - m[0, 0] - m[1, 1] + m[2, 2]
-                q = [m[0, 1] - m[1, 0], m[2, 0] +
-                     m[0, 2], m[1, 2] + m[2, 1], t]
+                q = [m[0, 1] - m[1, 0], m[2, 0] + m[0, 2], m[1, 2] + m[2, 1], t]
             else:
                 t = 1 + m[0, 0] + m[1, 1] + m[2, 2]
                 q = [t, m[1, 2] - m[2, 1], m[2, 0] - m[0, 2], m[0, 1] - m[1, 0]]
 
-        q = np.array(q).astype('float64')
+        q = np.array(q).astype("float64")
         q *= 0.5 / np.sqrt(t)
         return Quaternion(*q)
 
     def closest_principal(self) -> Quaternion:
         eul = self.to_euler()
         rads = eul * (2 / np.pi)
-        return Quaternion.from_euler(rads.round(0) * np.pi/2)
+        return Quaternion.from_euler(rads.round(0) * np.pi / 2)
 
     def is_inverted(self) -> bool:
         # does the rotation reverse the Z axis?
         return np.sign(self.transform_point(PZ()).z) > 0
 
-    def bearing(self, p: Point=None):
+    def bearing(self, p: Point = None):
         if p is None:
             p = Point.X()
         return self.transform_point(p).bearing()
-    
-    def slerp(self, index: npt.NDArray = None, extrapolate:Literal["throw", "nearest"]="throw"):
+
+    @staticmethod
+    def slerp_pair(q0: Quaternion, q1: Quaternion, frac: npt.NDArray, shortest: bool = True) -> Quaternion:
+        """Batched spherical linear interpolation between corresponding
+        rows of q0 and q1. frac in [0, 1], broadcastable to len(q0)."""
+        q0, q1 = Quaternion.length_check(q0, q1)
+        
+        assert len(frac) == len(q0)
+
+        dot = q0.dot(q1)
+
+        if shortest:
+            flip = dot < 0
+            q1 = Quaternion(np.where(flip[:, None], -q1.data, q1.data))
+            dot = np.where(flip, -dot, dot)
+
+        dot = np.clip(dot, -1.0, 1.0)
+        theta_0 = np.arccos(dot)
+        sin_theta_0 = np.sin(theta_0)
+
+        # near-identical quaternions: fall back to (renormalized) linear interp
+        small = sin_theta_0 < 1e-6
+        safe_sin = np.where(small, 1.0, sin_theta_0)
+
+        s0 = np.where(small, 1.0 - frac, np.sin((1 - frac) * theta_0) / safe_sin)
+        s1 = np.where(small, frac, np.sin(frac * theta_0) / safe_sin)
+
+        return Quaternion(s0[:, None] * q0.data + s1[:, None] * q1.data).norm()
+
+    def slerp(
+        self,
+        index: npt.NDArray = None,
+        extrapolate: Literal["throw", "nearest"] = "throw",
+    ):
         index = np.asarray(np.arange(len(self)) if index is None else index)
 
         assert len(index) == len(self)
         assert np.all(index[1:] >= index[:-1])
-        
+
         def doslerp(ts: npt.NDArray | Number) -> Quaternion:
             ts = np.atleast_1d(ts)
             starts = np.searchsorted(index, ts, side="right") - 1
             stops = np.searchsorted(index, ts, side="left")
-            
-            #case interpolate match (start == stop - 1)
-            odata = self.to_numpy("xyzw")[starts]
-            to_interp = starts != stops
-            #odata[exacts] = self.to_numpy("xyzw")[starts[exacts]]
-        
-            odata[to_interp] = slerp(
-                self[starts[to_interp]].to_numpy("xyzw"),
-                self[stops[to_interp]].to_numpy("xyzw"),
-                (ts[to_interp] - index[starts[to_interp]]) / (index[stops[to_interp]] - index[starts[to_interp]]),
-                True 
-            )
-            #case exact match (start == stop)
-            
 
-            #case outside range above (start == index[-1], stop== -1)
-            aboves = stops==-1
+            # case interpolate match (start == stop - 1)
+            odata = self[starts].data
+            to_interp = starts != stops
+            # odata[exacts] = self.to_numpy("xyzw")[starts[exacts]]
+
+            odata[to_interp] = Quaternion.slerp_pair(
+                self[starts[to_interp]],
+                self[stops[to_interp]],
+                (ts[to_interp] - index[starts[to_interp]])
+                / (index[stops[to_interp]] - index[starts[to_interp]]),
+                True,
+            ).data
+            # case exact match (start == stop)
+
+            # case outside range above (start == index[-1], stop== -1)
+            aboves = stops == -1
             if np.any(aboves):
-                if extrapolate=="throw":
-                    raise Exception("Cannot slerp beyond range")
+                if extrapolate == "throw":
+                    raise ExtrapolationError("Cannot slerp beyond range")
                 else:
                     odata[aboves] = self.to_numpy("xyzw")[-1, :]
-            #case outside range below (start == -1, stop==index[0])
-            belows = starts==-1
+            # case outside range below (start == -1, stop==index[0])
+            belows = starts == -1
             if np.any(belows):
-                if extrapolate=="throw":
-                    raise Exception("Cannot slerp beyond range")
+                if extrapolate == "throw":
+                    raise ExtrapolationError("Cannot slerp beyond range")
                 else:
                     odata[belows] = self.to_numpy("xyzw")[0, :]
 
-            return Quaternion.from_numpy( odata, "xyzw")
-        
+            return Quaternion.from_numpy(odata, "xyzw")
+
         return doslerp
 
     def _safe_slerp(self, interp, t):
@@ -322,39 +359,78 @@ class Quaternion(Base):
 
     def bounded_by(self, tol: float):
         """Check all rotations within this dataset are within tol radians of the first one"""
-        
+
         return len(self) == 1 or np.all(
-            [
-                abs(Quaternion.body_axis_rates(self[1:], self[0])) < tol
-            ]
+            [abs(Quaternion.body_axis_rates(self[1:], self[0])) < tol]
         )
-    
-#    @staticmethod
-#    def slerp(a: Quaternion, b: Quaternion):
-#        """spherical linear interpolation"""
-#        from rowan.interpolate import slerp
-#        def doslerp(t):
-#            xyzw = slerp(a.xyzw, b.xyzw, np.clip(t, 0, 1))
-#            return Quaternion(xyzw[:,3], xyzw[:,0], xyzw[:,1], xyzw[:,2])
-#        return doslerp
+
+    #    @staticmethod
+    #    def slerp(a: Quaternion, b: Quaternion):
+    #        """spherical linear interpolation"""
+    #        from rowan.interpolate import slerp
+    #        def doslerp(t):
+    #            xyzw = slerp(a.xyzw, b.xyzw, np.clip(t, 0, 1))
+    #            return Quaternion(xyzw[:,3], xyzw[:,0], xyzw[:,1], xyzw[:,2])
+    #        return doslerp
+
+    def plot_3d(self, size: float = 3, vis: Literal["coord", "plane"] = "coord"):
+        from geometry import Transformation
+
+        return Transformation(self).plot_3d(size, vis)
 
     @staticmethod
-    def squad(p: Quaternion, a: Quaternion, b: Quaternion, q: Quaternion):
-        
-        def dosquad(t):
-            xyzq = squad(p.xyzw, a.xyzw, b.xyzw, q.xyzw, np.clip(t, 0, 1))
-            return Quaternion(xyzq[:,3], xyzq[:,0], xyzq[:,1], xyzq[:,2])
+    def squad_control_points(
+        r0: Quaternion, r1: Quaternion, q0: Point, q1: Point, dt: float
+    ) -> tuple[Quaternion, Quaternion]:
+        """Calculate the control points for squad interpolation between q1 and q2"""
+
+        r1 = r1.where(Quaternion.dot(r0, r1) < 0, -r1)
+
+        exp_cur = Quaternion.from_axis_angle(-q0 * dt / 4)
+        exp_next = Quaternion.from_axis_angle(q1 * dt / 4)
+
+        return r0 * exp_cur, r1 * exp_next
+
+    def squad(r: Quaternion, q: Point, t: Time) -> callable:
+
+        assert len(r) == len(q) == len(t)
+        assert len(r) >= 2, "squad needs at least two samples"
+        index = t.t 
+        assert np.all(index[1:] >= index[:-1])
+
+
+        s0, s1 = Quaternion.squad_control_points(
+            r[:-1], r[1:], q[:-1], q[1:], t.dt[:-1]
+        )
+
+        def dosquad(ts: npt.NDArray | Number) -> Quaternion:
+            ts = np.atleast_1d(np.asarray(ts, dtype=float))
+
+            if np.any(ts < index[0]) or np.any(ts > index[-1]):
+                raise ExtrapolationError("Cannot squad beyond range")
+
+            # segment i such that index[i] <= t <= index[i+1]
+            starts = np.searchsorted(index, ts, side="right") - 1
+            starts = np.clip(starts, 0, len(index) - 2)
+
+            seg_dt = index[starts + 1] - index[starts]
+            u = np.where(seg_dt > 0, (ts - index[starts]) / seg_dt, 0.0)
+
+            slerp_rq = Quaternion.slerp_pair(r[starts], r[starts+1], u, True)
+            slerp_cs = Quaternion.slerp_pair(s0[starts], s1[starts], u, True)
+
+            return Quaternion.slerp_pair(slerp_rq, slerp_cs, 2 * u * (1 - u), True)
+            
+
         return dosquad
 
-    def plot_3d(self, size: float=3, vis:Literal["coord", "plane"]="coord"):
-        from geometry import Transformation
-        return Transformation(self).plot_3d(size, vis)
 
 def Q0(count=1):
     return Quaternion.zero(count)
 
 
-
 def Quaternions(*args, **kwargs):
-    warn("Quaternions is deprecated, you can now just use Quaternion", DeprecationWarning)
+    warn(
+        "Quaternions is deprecated, you can now just use Quaternion", DeprecationWarning
+    )
     return Quaternions(*args, **kwargs)

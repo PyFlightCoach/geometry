@@ -32,6 +32,7 @@ class Time(Base):
             if len(t) == 1:
                 dt = np.array([1 / 25])
             else:
+                t = np.asarray(t, dtype=np.float64)
                 arr = np.diff(t)
                 dt = np.pad(
                     arr, (0, 1), constant_values=arr[-1]
