@@ -12,6 +12,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
+from functools import cached_property
 from numbers import Number
 from typing import ClassVar, Literal
 from warnings import warn
@@ -19,7 +20,6 @@ from warnings import warn
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from rowan.interpolate import slerp
 
 from geometry.point import P0, PZ, Point
 from geometry.time import Time
@@ -34,9 +34,9 @@ class Quaternion(Base):
     def zero(count=1) -> Quaternion:
         return Quaternion(np.tile([1, 0, 0, 0], (count, 1)))
 
-    @property
+    @cached_property
     def xyzw(self):
-        return np.array([self.x, self.y, self.z, self.w]).T
+        return self.data[:, [1, 2, 3, 0]]
 
     @property
     def axis(self) -> Point:
@@ -279,27 +279,37 @@ class Quaternion(Base):
         rows of q0 and q1. frac in [0, 1], broadcastable to len(q0)."""
         q0, q1 = Quaternion.length_check(q0, q1)
         
-        assert len(frac) == len(q0)
-
-        dot = q0.dot(q1)
-
+        # Ensure frac is a NumPy array for element-wise operations
+        frac = np.asarray(frac)
+        
+        # Extract raw data arrays
+        q0_data = q0.data
+        q1_data = q1.data.copy()  # Copy to safely modify the sign if shortest path is enabled
+        
+        # Compute row-wise dot product
+        dot = np.sum(q0_data * q1_data, axis=1)
+        
         if shortest:
+            # Flip target quaternion data and dot product sign when angle is obtuse
             flip = dot < 0
-            q1 = Quaternion(np.where(flip[:, None], -q1.data, q1.data))
+            q1_data = np.where(flip[:, None], -q1_data, q1_data)
             dot = np.where(flip, -dot, dot)
-
+            
         dot = np.clip(dot, -1.0, 1.0)
         theta_0 = np.arccos(dot)
         sin_theta_0 = np.sin(theta_0)
-
-        # near-identical quaternions: fall back to (renormalized) linear interp
+        
+        # Handle collinear/near-zero angle cases using standard linear interpolation (LERP)
         small = sin_theta_0 < 1e-6
         safe_sin = np.where(small, 1.0, sin_theta_0)
-
-        s0 = np.where(small, 1.0 - frac, np.sin((1 - frac) * theta_0) / safe_sin)
+        
+        s0 = np.where(small, 1.0 - frac, np.sin((1.0 - frac) * theta_0) / safe_sin)
         s1 = np.where(small, frac, np.sin(frac * theta_0) / safe_sin)
+        
+        # Combine results and return normalised Quaternion object
+        out_data = s0[:, None] * q0_data + s1[:, None] * q1_data
 
-        return Quaternion(s0[:, None] * q0.data + s1[:, None] * q1.data).norm()
+        return Quaternion(out_data).norm()
 
     def slerp(
         self,
@@ -319,8 +329,7 @@ class Quaternion(Base):
             # case interpolate match (start == stop - 1)
             odata = self[starts].data
             to_interp = starts != stops
-            # odata[exacts] = self.to_numpy("xyzw")[starts[exacts]]
-
+            
             odata[to_interp] = Quaternion.slerp_pair(
                 self[starts[to_interp]],
                 self[stops[to_interp]],
@@ -336,16 +345,16 @@ class Quaternion(Base):
                 if extrapolate == "throw":
                     raise ExtrapolationError("Cannot slerp beyond range")
                 else:
-                    odata[aboves] = self.to_numpy("xyzw")[-1, :]
+                    odata[aboves] = self.data[-1, :]
             # case outside range below (start == -1, stop==index[0])
             belows = starts == -1
             if np.any(belows):
                 if extrapolate == "throw":
                     raise ExtrapolationError("Cannot slerp beyond range")
                 else:
-                    odata[belows] = self.to_numpy("xyzw")[0, :]
+                    odata[belows] = self.data[0, :]
 
-            return Quaternion.from_numpy(odata, "xyzw")
+            return Quaternion(odata)
 
         return doslerp
 

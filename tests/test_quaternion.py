@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import quaternion
 from pytest import approx, mark
+from rowan.interpolate import slerp
 
 from geometry import Euldeg, Euler
 from geometry.checks import assert_almost_equal
@@ -205,7 +206,17 @@ def test_slerp():
     #I think this should not fail:
     #np.testing.assert_array_almost_equal(q_halfs.body_diff().z[::2], qs.body_diff().z /2)
     
+def test_slerp_2():
+    qs = Euldeg(PZ() * np.arange(5))
 
+    qi = qs.slerp()(np.arange(9)/2)
+
+    eulers = qi.to_euler()
+
+    np.testing.assert_array_almost_equal(
+        Quaternion.body_axis_rates(Q0(), qi).degrees().z,
+        np.arange(0, 9) / 2
+    )
 
 
 @mark.skip("to be thought about later")
@@ -213,18 +224,5 @@ def test_backward_diff_problem():
     data = pd.read_csv('tests/quat_body_diff_test.csv')
     ps = Quaternion(data.iloc[:,1:]).body_diff(data.iloc[:,0].to_numpy())
     assert np.mean(ps.y[100:200]) > 0
-   # rmats = np.array([
-   #     np.identity(3),
-   #     Point(1, 1, 0).to_rotation_matrix()[0],
-   #     Point(0.7, -1.2, 1).to_rotation_matrix()[0]
-   # ])
-#
-   # quats = Quaternion.from_rotation_matrix(rmats)
-#
-   # rmat2 = quats.to_rotation_matrix()
-#
-   #     
-   # np.testing.assert_array_equal(rmats, rmat2)
-
 
 

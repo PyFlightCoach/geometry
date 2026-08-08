@@ -292,8 +292,8 @@ class Base:
         
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
-        dt = np.tile(dt, (len(self.cols), 1)).T
         _self, dt = Base.length_check(self, dt)
+        dt = np.tile(dt, (len(self.cols), 1)).T
         _method = getattr(np, method) if isinstance(method, str) else method
         
         data = _method(_self.data, axis=0)
