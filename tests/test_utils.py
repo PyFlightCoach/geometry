@@ -1,6 +1,8 @@
-from pytest import raises, mark
-from geometry.utils import get_index, get_value, apply_index_slice
 import numpy as np
+from pytest import raises
+
+from geometry.utils import apply_index_slice, get_index, get_value
+
 
 def test_get_index():
     arr = np.arange(10)
