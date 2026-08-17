@@ -12,6 +12,8 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from numbers import Number
 from typing import ClassVar
 from warnings import warn
@@ -21,6 +23,24 @@ import numpy.typing as npt
 import pandas as pd
 
 from .base import Base
+
+try:
+    from scipy.interpolate import BSpline, UnivariateSpline, make_interp_spline
+    from scipy.spatial.transform import Rotation, RotationSpline
+    HAS_SCIPY = True
+except ImportError:
+    type UnivariateSpline=None
+    type BSpline=None
+    type Rotation=None
+    type RotationSpline=None
+    make_interp_spline=None
+    HAS_SCIPY = False
+    
+def check_scipy():
+    if not HAS_SCIPY:
+        raise ImportError(
+            "This function requires scipy. Please install scipy to use this feature."
+        )
 
 
 class Point(Base):
@@ -157,12 +177,12 @@ class Point(Base):
     def circle_xy(radius: float, n: int) -> Point:
         """
         Generate points on a circle in the specified plane.
-        
+
         :param radius: Radius of the circle.
         :param n: Number of points to generate.
         :return: Points on the circle as a Point object.
         """
-        
+
         angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
         return Point(radius * np.cos(angles), radius * np.sin(angles), np.zeros(n))
 
@@ -170,13 +190,13 @@ class Point(Base):
     def ellipse_xy(a: float, b: float, n: int) -> Point:
         """
         Generate points on an ellipse in the specified plane.
-        
+
         :param a: Semi-major axis length.
         :param b: Semi-minor axis length.
         :param n: Number of points to generate.
         :return: Points on the ellipse as a Point object.
         """
-        
+
         angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
         return Point(a * np.cos(angles), b * np.sin(angles), np.zeros(n))
 
@@ -213,18 +233,33 @@ class Point(Base):
         return px.line(self.df, x="z", y="x").update_layout(
             yaxis=dict(scaleanchor="x", scaleratio=1, title="x"), xaxis=dict(title="z")
         )
+
     def plotxz(self):
         import plotly.express as px
 
         return px.line(self.df, x="x", y="z").update_layout(
             yaxis=dict(scaleanchor="x", scaleratio=1, title="x"), xaxis=dict(title="z")
         )
+
     def arbitrary_perpendicular(self) -> Point:
         min_axes = np.argmin(np.abs(self.data), axis=1)
         cvecs = Point.concatenate(
             [Point(*[1 if axis == i else 0 for i in np.arange(3)]) for axis in min_axes]
         )
         return cross(self, cvecs)
+
+    def univariate_spline(
+        self, index: npt.NDArray[np.float64], **kwargs
+    ) -> Callable[[npt.NDArray[np.float64]], Point]:
+        
+
+        return UnivariateSplineFunction.from_point( index, self, **kwargs)
+
+    def interp_spline(
+        self, index: npt.NDArray[np.float64], **kwargs
+    ) -> Callable[[npt.NDArray[np.float64]], Point]:
+        
+        return InterpolatingSplineFunction.from_point(index, self, **kwargs)
 
 
 def Points(*args, **kwargs):
@@ -286,14 +321,17 @@ def vector_projection(a: Point, b: Point) -> Point:
 def vector_rejection(a: Point, b: Point) -> Point:
     return a - ((Point.dot(a, b)) / Point.dot(b, b)) * b
 
+
 @ppmeth
 def min_angle_between(p1: Point, p2: Point):
     angle = angle_between(p1, p2) % np.pi
     return np.minimum(angle, np.pi - angle)
 
+
 @ppmeth
 def is_parallel(a: Point, b: Point, tolerance=1e-6):
     return abs(a.cos_angle_between(b) - 1) < tolerance
+
 
 @ppmeth
 def is_anti_parallel(a: Point, b: Point, tolerance=1e-6):
@@ -316,3 +354,83 @@ def vector_norm(point: Point):
 
 def normalize_vector(point: Point):
     return point / abs(point)
+
+
+
+@dataclass
+class UnivariateSplineFunction:
+    splines: dict[int, tuple[UnivariateSpline, UnivariateSpline, UnivariateSpline]] = (
+        field(default_factory=list)
+    )
+
+    @staticmethod
+    def from_point(
+        index: npt.NDArray[np.float64], point: Point, **kwargs
+    ) -> UnivariateSplineFunction:
+        check_scipy()
+        splines = tuple(
+            UnivariateSpline(index, point.data[:, i], **kwargs) for i in range(3)
+        )
+        return UnivariateSplineFunction({0: splines})
+
+    def __call__(self, x: npt.NDArray[np.float64], n=0) -> Point:
+        if not n in self.splines:
+            self.splines[n] = tuple(spline.derivative(n) for spline in self.splines[0])
+        return Point(*(spline(x) for spline in self.splines[n]))
+
+    def to_dict(self) -> tuple[dict, dict, dict]:
+        _out = []
+        for _spline in self.splines[0]:
+            knots, coeffs, degree = _spline._eval_args
+            _out.append(
+                {
+                    "knots": knots.to_list(),
+                    "coeffs": coeffs.to_list(),
+                    "degree": degree,
+                }
+            )
+        return tuple(_out)
+
+    @classmethod
+    def from_dict(cls, data: tuple[dict, dict, dict]) -> UnivariateSplineFunction:
+        check_scipy()
+        splines = tuple(BSpline(*d.values()) for d in data)
+        return cls({0: splines})
+
+    
+@dataclass
+class InterpolatingSplineFunction:
+    splines: tuple[BSpline, BSpline, BSpline]
+
+    @staticmethod
+    def from_point(
+        index: npt.NDArray[np.float64], point: Point, **kwargs
+    ) -> InterpolatingSplineFunction:
+        check_scipy()
+        return InterpolatingSplineFunction(
+            tuple(
+                make_interp_spline(index, point.data[:, i], **kwargs) for i in range(3)
+            )
+        )
+
+    def __call__(self, x: npt.NDArray[np.float64], n=0) -> Point:
+        return Point(*(spline(x, n) for spline in self.splines))
+
+    def to_dict(self) -> tuple[dict, dict, dict]:
+        _out = []
+        for _spline in self.splines:
+            knots, coeffs, degree = _spline._eval_args
+            _out.append(
+                {
+                    "knots": knots.to_list(),
+                    "coeffs": coeffs.to_list(),
+                    "degree": degree,
+                }
+            )
+        return tuple(_out)
+
+    @classmethod
+    def from_dict(cls, data: tuple[dict, dict, dict]) -> InterpolatingSplineFunction:
+        check_scipy()
+        splines = tuple(BSpline(*d.values()) for d in data)
+        return cls(splines)

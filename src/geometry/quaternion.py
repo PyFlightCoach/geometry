@@ -12,6 +12,8 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from functools import cached_property
 from numbers import Number
 from typing import ClassVar, Literal
@@ -22,9 +24,26 @@ import numpy.typing as npt
 import pandas as pd
 
 from geometry.point import P0, PZ, Point
-from geometry.time import Time
 
 from .base import Base, ExtrapolationError, dprep
+
+try:
+    from scipy.interpolate import BSpline, UnivariateSpline, make_interp_spline
+    from scipy.spatial.transform import Rotation, RotationSpline
+    HAS_SCIPY = True
+except ImportError:
+    type UnivariateSpline=None
+    type BSpline=None
+    type Rotation=None
+    type RotationSpline=None
+    make_interp_spline=None
+    HAS_SCIPY = False
+    
+def check_scipy():
+    if not HAS_SCIPY:
+        raise ImportError(
+            "This function requires scipy. Please install scipy to use this feature."
+        )
 
 
 class Quaternion(Base):
@@ -273,6 +292,20 @@ class Quaternion(Base):
             p = Point.X()
         return self.transform_point(p).bearing()
 
+
+    def bounded_by(self, tol: float):
+        """Check all rotations within this dataset are within tol radians of the first one"""
+
+        return len(self) == 1 or np.all(
+            [abs(Quaternion.body_axis_rates(self[1:], self[0])) < tol]
+        )
+
+    def plot_3d(self, size: float = 3, vis: Literal["coord", "plane"] = "coord"):
+        from geometry import Transformation
+
+        return Transformation(self).plot_3d(size, vis)
+
+
     @staticmethod
     def slerp_pair(
         q0: Quaternion,
@@ -321,153 +354,32 @@ class Quaternion(Base):
     def slerp(
         self,
         index: npt.NDArray = None,
-        extrapolate: Literal["throw", "nearest"] = "throw",
     ):
         index = np.asarray(np.arange(len(self)) if index is None else index)
 
         assert len(index) == len(self)
         assert np.all(index[1:] >= index[:-1])
 
-        def doslerp(
-            ts: npt.NDArray | Number, mode: Literal["world", "body"] = "world", axis_rates: bool=False
-        ) -> tuple[Quaternion, Point] | Quaternion:
-            ts = np.atleast_1d(ts)
-            starts = np.searchsorted(index, ts, side="right") - 1
-            stops = np.searchsorted(index, ts, side="left")
+        return SlerpFunction(index, self)
 
-            odata = self[starts].data
-            rdata = np.zeros((len(ts), 3))
-            to_interp = starts != stops
-
-            q, rate = Quaternion.slerp_pair(
-                self[starts[to_interp]],
-                self[stops[to_interp]],
-                (ts[to_interp] - index[starts[to_interp]])
-                / (index[stops[to_interp]] - index[starts[to_interp]]),
-                index[stops[to_interp]] - index[starts[to_interp]],
-                True,
-                mode,
-            )
-
-            odata[to_interp] = q.data
-            rdata[to_interp] = rate.data
-            # case exact match (start == stop): rdata stays zero — instantaneous
-            # rate at a sample point isn't defined by a pairwise slerp; use
-            # dosquad-style central differencing there if you need it.
-
-            aboves = stops == -1
-            if np.any(aboves):
-                if extrapolate == "throw":
-                    raise ExtrapolationError("Cannot slerp beyond range")
-                else:
-                    odata[aboves] = self.data[-1, :]
-            belows = starts == -1
-            if np.any(belows):
-                if extrapolate == "throw":
-                    raise ExtrapolationError("Cannot slerp beyond range")
-                else:
-                    odata[belows] = self.data[0, :]
-            if axis_rates:
-                return Quaternion(odata), Point(rdata)
-            else:
-                return Quaternion(odata)
-
-        return doslerp
-
-    def _safe_slerp(self, interp, t):
-        t = np.asarray(t)
-        mask = (t >= self._t_np[0]) & (t <= self._t_np[-1])
-        out = np.zeros((len(t), 4))
-        out[mask] = interp(t[mask])
-        out[~mask] = interp(self._t_np[0])  # or nearest quaternion
-        return out
-
-    def bounded_by(self, tol: float):
-        """Check all rotations within this dataset are within tol radians of the first one"""
-
-        return len(self) == 1 or np.all(
-            [abs(Quaternion.body_axis_rates(self[1:], self[0])) < tol]
-        )
-
-    def plot_3d(self, size: float = 3, vis: Literal["coord", "plane"] = "coord"):
-        from geometry import Transformation
-
-        return Transformation(self).plot_3d(size, vis)
-
-    @staticmethod
-    def squad_control_points(
-        r0: Quaternion, r1: Quaternion, q0: Point, q1: Point, dt: float
-    ) -> tuple[Quaternion, Quaternion]:
-        """Calculate the control points for squad interpolation between q1 and q2"""
-
-        r1 = r1.where(Quaternion.dot(r0, r1) < 0, -r1)
-
-        exp_cur = Quaternion.from_axis_angle(q0 * dt / 3)
-        exp_next = Quaternion.from_axis_angle(-q1 * dt / 3)
-
-        return r0 * exp_cur, r1 * exp_next
-
-    def squad(r: Quaternion, q: Point, t: Time) -> callable:
-        assert len(r) == len(q) == len(t)
-        assert len(r) >= 2, "squad needs at least two samples"
-        index = t.t
+    def squad(self: Quaternion, q: Point, index: npt.NDArray[np.float64]) -> callable:
+        assert len(self) == len(q) == len(index)
+        assert len(self) >= 2, "squad needs at least two samples"       
         assert np.all(index[1:] >= index[:-1])
 
-        s0, s1 = Quaternion.squad_control_points(
-            r[:-1], r[1:], q[:-1], q[1:], t.dt[:-1]
-        )
+        return SquadFunction.build(index, self, q)
 
-        def _squad_quat(
-            ts: npt.NDArray, mode: Literal["world", "body"] = "world"
-        ) -> Quaternion:
-            starts = np.searchsorted(index, ts, side="right") - 1
-            starts = np.clip(starts, 0, len(index) - 2)
 
-            seg_dt = index[starts + 1] - index[starts]
-            u = np.where(seg_dt > 0, (ts - index[starts]) / seg_dt, 0.0)
+    def rotation_spline(
+        self, index: npt.NDArray[np.float64], **kwargs
+    ) -> Callable[[npt.NDArray[np.float64]], Quaternion | Point]:
+        
+        assert len(self) == len(index)
+        assert len(self) >= 2, "squad needs at least two samples"
+        assert np.all(index[1:] >= index[:-1])
 
-            P0, P1, P2, P3 = r[starts], s0[starts], s1[starts], r[starts + 1]
+        return RotationSplineFunction.build(index, self)
 
-            # Exact spherical cubic Bezier via 3-level de Casteljau (nested
-            # slerp), NOT Shoemake's 2-level shortcut -- required for the
-            # control points above to reproduce the given tangents exactly
-            # at the knots.
-            A, _ = Quaternion.slerp_pair(P0, P1, u, seg_dt, True, mode)
-            B, _ = Quaternion.slerp_pair(P1, P2, u, seg_dt, True, mode)
-            C, _ = Quaternion.slerp_pair(P2, P3, u, seg_dt, True, mode)
-
-            D, _ = Quaternion.slerp_pair(A, B, u, seg_dt, True, mode)
-            E, _ = Quaternion.slerp_pair(B, C, u, seg_dt, True, mode)
-
-            out, _ = Quaternion.slerp_pair(D, E, u, seg_dt, True, mode)
-            return out
-
-        def dosquad(
-            ts: npt.NDArray | Number, mode: Literal["world", "body"] = "world"
-        ) -> tuple[Quaternion, Point]:
-            ts = np.atleast_1d(np.asarray(ts, dtype=float))
-
-            if np.any(ts < index[0]) or np.any(ts > index[-1]):
-                raise ExtrapolationError("Cannot squad beyond range")
-
-            out = _squad_quat(ts, mode)
-
-            span = index[-1] - index[0]
-            eps = max(span * 1e-6, 1e-9)
-            ts_p = np.minimum(ts + eps, index[-1])
-            ts_m = np.maximum(ts - eps, index[0])
-            dt_eff = ts_p - ts_m
-            dt_eff = np.where(dt_eff > 0, dt_eff, eps)
-
-            q_m = _squad_quat(ts_m, mode)
-            q_p = _squad_quat(ts_p, mode)
-
-            method = Quaternion._axis_rates if mode == "world" else Quaternion._body_axis_rates
-            rate = method(q_m, q_p) / dt_eff
-
-            return out, Point(rate.data)
-
-        return dosquad
 
 def Q0(count=1):
     return Quaternion.zero(count)
@@ -478,3 +390,202 @@ def Quaternions(*args, **kwargs):
         "Quaternions is deprecated, you can now just use Quaternion", DeprecationWarning
     )
     return Quaternions(*args, **kwargs)
+
+
+@dataclass
+class SlerpFunction:
+    index: npt.NDArray[np.float64]
+    data: Quaternion
+
+    def __call__(
+        self,
+        ts: npt.NDArray | Number,
+        mode: Literal["world", "body"] = "world",
+        axis_rates: bool = False,
+        extrapolate: Literal["throw", "nearest", "nan"] = "nearest",
+    ) -> tuple[Quaternion, Point] | Quaternion:
+        ts = np.atleast_1d(ts)
+        starts = np.searchsorted(self.index, ts, side="right") - 1
+        stops = np.searchsorted(self.index, ts, side="left")
+
+        odata = self.data[starts].data
+        rdata = np.zeros((len(ts), 3))
+        to_interp = starts != stops
+
+        q, rate = Quaternion.slerp_pair(
+            self.data[starts[to_interp]],
+            self.data[stops[to_interp]],
+            (ts[to_interp] - self.index[starts[to_interp]])
+            / (self.index[stops[to_interp]] - self.index[starts[to_interp]]),
+            self.index[stops[to_interp]] - self.index[starts[to_interp]],
+            True,
+            mode,
+        )
+
+        odata[to_interp] = q.data
+        rdata[to_interp] = rate.data
+        # case exact match (start == stop): rdata stays zero — instantaneous
+        # rate at a sample point isn't defined by a pairwise slerp; use
+        # dosquad-style central differencing there if you need it.
+
+        aboves = stops == -1
+        belows = starts == -1
+
+        if np.any(aboves) or np.any(belows):
+            if extrapolate == "throw":
+                raise ExtrapolationError("Cannot slerp beyond range")
+            elif extrapolate == "nan":
+                odata[aboves & belows] = np.nan
+                rdata[aboves & belows] = np.nan
+            elif extrapolate == "nearest":
+                odata[aboves] = self.data.data[-1, :]
+                odata[belows] = self.data.data[0, :]
+                rdata[aboves & belows] = 0.0
+
+        if axis_rates:
+            return Quaternion(odata), Point(rdata)
+        else:
+            return Quaternion(odata)
+
+    def to_dict(self) -> dict:
+        return {"index": self.index.to_list(), "data": self.data.to_dict()}
+
+    @staticmethod
+    def from_dict(data: dict) -> SlerpFunction:
+        return SlerpFunction(
+            np.asarray(data["index"]), Quaternion.from_dict(data["data"])
+        )
+
+
+@dataclass
+class SquadFunction:
+    index: npt.NDArray[np.float64]
+    data: Quaternion
+    q: Point
+    s0: Quaternion
+    s1: Quaternion
+
+    @staticmethod
+    def build(
+        index: npt.NDArray[np.float64], data: Quaternion, q: Point
+    ) -> SquadFunction:
+        dt = np.pad(np.diff(index), (0, 1))
+        s0, s1 = SquadFunction.squad_control_points(
+            data[:-1], data[1:], q[:-1], q[1:], dt[:-1]
+        )
+        return SquadFunction(index, data, q, s0, s1)
+
+    @staticmethod
+    def squad_control_points(
+        r0: Quaternion, r1: Quaternion, q0: Point, q1: Point, dt: float
+    ) -> tuple[Quaternion, Quaternion]:
+        r1 = r1.where(Quaternion.dot(r0, r1) < 0, -r1)
+
+        exp_cur = Quaternion.from_axis_angle(q0 * dt / 3)
+        exp_next = Quaternion.from_axis_angle(-q1 * dt / 3)
+
+        return r0 * exp_cur, r1 * exp_next
+
+    def _squad_quat(
+        self, ts: npt.NDArray, mode: Literal["world", "body"] = "world"
+    ) -> Quaternion:
+        starts = np.searchsorted(self.index, ts, side="right") - 1
+        starts = np.clip(starts, 0, len(self.index) - 2)
+
+        seg_dt = self.index[starts + 1] - self.index[starts]
+        u = np.where(seg_dt > 0, (ts - self.index[starts]) / seg_dt, 0.0)
+
+        P0, P1, P2, P3 = (
+            self[starts],
+            self.s0[starts],
+            self.s1[starts],
+            self[starts + 1],
+        )
+
+        A, _ = Quaternion.slerp_pair(P0, P1, u, seg_dt, True, mode)
+        B, _ = Quaternion.slerp_pair(P1, P2, u, seg_dt, True, mode)
+        C, _ = Quaternion.slerp_pair(P2, P3, u, seg_dt, True, mode)
+
+        D, _ = Quaternion.slerp_pair(A, B, u, seg_dt, True, mode)
+        E, _ = Quaternion.slerp_pair(B, C, u, seg_dt, True, mode)
+
+        out, _ = Quaternion.slerp_pair(D, E, u, seg_dt, True, mode)
+        return out
+
+    def __call__(
+        self, ts: npt.NDArray | Number, mode: Literal["world", "body"] = "world"
+    ) -> tuple[Quaternion, Point]:
+        ts = np.atleast_1d(np.asarray(ts, dtype=float))
+
+        if np.any(ts < self.index[0]) or np.any(ts > self.index[-1]):
+            raise ExtrapolationError("Cannot squad beyond range")
+
+        out = self._squad_quat(ts, mode)
+
+        span = self.index[-1] - self.index[0]
+        eps = max(span * 1e-6, 1e-9)
+        ts_p = np.minimum(ts + eps, self.index[-1])
+        ts_m = np.maximum(ts - eps, self.index[0])
+        dt_eff = ts_p - ts_m
+        dt_eff = np.where(dt_eff > 0, dt_eff, eps)
+
+        q_m = self._squad_quat(ts_m, mode)
+        q_p = self._squad_quat(ts_p, mode)
+
+        method = (
+            Quaternion._axis_rates if mode == "world" else Quaternion._body_axis_rates
+        )
+        rate = method(q_m, q_p) / dt_eff
+
+        return out, rate
+
+    def to_dict(self) -> dict:
+        return {
+            "index": self.index.to_list(),
+            "data": self.data.to_dict(),
+            "q": self.q.to_dict(),
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> SquadFunction:
+        return SquadFunction.build(
+            np.asarray(data["index"]),
+            Quaternion.from_dict(data["data"]),
+            Point.from_dict(data["q"]),
+        )
+
+
+@dataclass
+class RotationSplineFunction:
+    index: npt.NDArray[np.float64]
+    data: Quaternion
+    spline: RotationSpline
+
+    def __call__(self, x: npt.NDArray[np.float64], n=0) -> Quaternion:
+        if n == 0:
+            return Quaternion(self.spline(x).as_quat()[:, [3, 0, 1, 2]])
+        else:
+            return Point(self.spline(x, n))
+
+    def to_dict(self) -> dict:
+        return {
+            "index": self.index.to_list(),
+            "data": self.data.to_dict(),
+        }
+
+    @staticmethod
+    def build(index: npt.NDArray[np.float64], data: Quaternion) -> RotationSplineFunction:
+        check_scipy()
+        return RotationSplineFunction(
+            index,
+            data,
+            RotationSpline(index, Rotation.from_quat(data.data[:, [1, 2, 3, 0]])),
+        )
+
+    @staticmethod
+    def from_dict(data: dict) -> RotationSplineFunction:
+        check_scipy()
+        return RotationSplineFunction.build(
+            np.asarray(data["index"]),
+            Quaternion.from_dict(data["data"]),
+        )

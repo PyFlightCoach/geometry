@@ -218,6 +218,13 @@ def test_slerp_2():
         np.arange(0, 9) / 2
     )
 
+def test_rotation_spline():
+    qs = Euldeg(PZ() * np.arange(5))
+    q_spline = qs.rotation_spline(np.arange(5)/2)
+    qi = q_spline(np.arange(5)/2)
+    assert_almost_equal(qi, qs)
+
+
 
 @mark.skip("to be thought about later")
 def test_backward_diff_problem():

@@ -3,6 +3,7 @@ from __future__ import annotations
 from numbers import Number
 from time import time
 from typing import ClassVar, Literal, Self, TypeVar, overload
+from warnings import warn
 
 import numpy as np
 import numpy.typing as npt
@@ -19,24 +20,25 @@ T = TypeVar("T", float, npt.NDArray[np.float64])
 
 class Time(Base):
     cols: ClassVar[list[str]] = ["t", "dt"]
-
+    
     def __post_init__(self):
         self.t = self.t.astype(np.float64)
         self.dt = self.dt.astype(np.float64)
+        if self.dt[-1] != 0:
+            warn("Setting the last dt to 0, this is a new requirement")
+            np.put(self.dt, -1, 0)
 
     @staticmethod
     def from_t(t: np.ndarray) -> Time:
         if isinstance(t, Number):
-            return Time(t, 1 / 25)
+            return Time(t, 0)
         else:
             if len(t) == 1:
-                dt = np.array([1 / 25])
+                dt = np.array([0])
             else:
                 t = np.asarray(t, dtype=np.float64)
                 arr = np.diff(t)
-                dt = np.pad(
-                    arr, (0, 1), constant_values=arr[-1]
-                )
+                dt = np.pad(arr, (0, 1))
             return Time(t, dt)
 
     @staticmethod
@@ -73,7 +75,7 @@ class Time(Base):
                 raise ValueError("Cannot extend time with no dt supplied if Time has only one point")
             dt = self.dt[-2]
         newdt = self.dt.copy()
-        newdt[-1] = dt
+        np.put(newdt, -1, dt)
         return Time(
             np.pad(self.t, (0, 1), constant_values=self.t[-1] + dt),
             np.pad(newdt, (0, 1), constant_values=0),
@@ -86,14 +88,16 @@ class Time(Base):
     ):
         """linear interpolation"""
         index = np.arange(len(self)) if index is None else index
-        extended_t = self.extend()
-
+        interpolator = self.linterp(index, extrapolate)
+        
         def dolinterp(new_index: npt.NDArray | Number):
-            new_t = self.linterp(index, extrapolate)(new_index).t
-            next_index = np.searchsorted(extended_t.t, new_t, "right")
-
-            new_dt = extended_t.t[next_index] - new_t
-            return Time(new_t, new_dt)
+            
+            new_t = interpolator(new_index).t
+            return Time.from_t(new_t)
+#            next_index = np.searchsorted(extended_t.t, new_t, "right")
+#
+#            new_dt = extended_t.t[next_index] - new_t
+#            return Time(new_t, new_dt)
 
         return dolinterp
 

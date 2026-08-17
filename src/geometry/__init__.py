@@ -21,6 +21,8 @@ from .mass import Mass
 from .air import Air
 from .angles import wrap_to_pi
 from .checks import assert_equal, assert_almost_equal
+from .quintic_hermite_spline import QuinticHermiteSpline
+
 
 type GBase = Time | Point | Quaternion | GPS | Coord | Transformation | Mass | Air
 
