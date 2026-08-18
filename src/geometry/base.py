@@ -224,7 +224,6 @@ class Base:
 
         diff = np.abs(self.data - other.data)
         return np.all(diff < tol)
-        
 
     @dprep
     def __eq__(self, other):
@@ -289,16 +288,16 @@ class Base:
     ) -> Self:
         if len(self) == 1:
             return self.__class__(np.zeros(self.data.shape))
-        
+
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
         _self, dt = Base.length_check(self, dt)
         dt = np.tile(dt, (len(self.cols), 1)).T
         _method = getattr(np, method) if isinstance(method, str) else method
-        
+
         data = _method(_self.data, axis=0)
-        
-        if method=="diff":
+
+        if method == "diff":
             data = np.divide(data, dt[:-1, :])
             data = np.pad(data, ((0, 1), (0, 0)), mode="edge")
         else:
@@ -460,16 +459,36 @@ class Base:
                     method = "linterp_recalculate_dt"
         return getattr(self, method)(index)
 
-    def plot(self, index=None, **kwargs):
+    def plot(
+        self,
+        index: npt.NDArray | pd.Index = None,
+        restart_color: bool = False,
+        dash: str | None = None,
+        **kwargs,
+    ):
+        import plotly.express as px
         import plotly.graph_objects as go
 
         fig = go.Figure()
-        for col in self.cols:
+        for i, col in enumerate(self.cols):
+            line = {
+                **(
+                    {
+                        "color": px.colors.qualitative.Plotly[
+                            i % len(px.colors.qualitative.Plotly)
+                        ]
+                    }
+                    if restart_color
+                    else {}
+                ),
+                **({"dash": dash} if dash is not None else {}),
+            }
             fig.add_trace(
                 go.Scatter(
                     x=np.arange(len(self)) if index is None else index,
                     y=getattr(self, col),
                     name=col,
+                    line=line,
                     **kwargs,
                 )
             )

@@ -26,16 +26,19 @@ from .base import Base
 
 try:
     from scipy.interpolate import BSpline, UnivariateSpline, make_interp_spline
+    from scipy.signal import butter, sosfilt
     from scipy.spatial.transform import Rotation, RotationSpline
+
     HAS_SCIPY = True
 except ImportError:
-    type UnivariateSpline=None
-    type BSpline=None
-    type Rotation=None
-    type RotationSpline=None
-    make_interp_spline=None
+    type UnivariateSpline = None
+    type BSpline = None
+    type Rotation = None
+    type RotationSpline = None
+    make_interp_spline = None
     HAS_SCIPY = False
-    
+
+
 def check_scipy():
     if not HAS_SCIPY:
         raise ImportError(
@@ -251,14 +254,13 @@ class Point(Base):
     def univariate_spline(
         self, index: npt.NDArray[np.float64], **kwargs
     ) -> Callable[[npt.NDArray[np.float64]], Point]:
-        
 
-        return UnivariateSplineFunction.from_point( index, self, **kwargs)
+        return UnivariateSplineFunction.from_point(index, self, **kwargs)
 
     def interp_spline(
         self, index: npt.NDArray[np.float64], **kwargs
     ) -> Callable[[npt.NDArray[np.float64]], Point]:
-        
+
         return InterpolatingSplineFunction.from_point(index, self, **kwargs)
 
 
@@ -356,7 +358,6 @@ def normalize_vector(point: Point):
     return point / abs(point)
 
 
-
 @dataclass
 class UnivariateSplineFunction:
     splines: dict[int, tuple[UnivariateSpline, UnivariateSpline, UnivariateSpline]] = (
@@ -365,11 +366,39 @@ class UnivariateSplineFunction:
 
     @staticmethod
     def from_point(
-        index: npt.NDArray[np.float64], point: Point, **kwargs
+        index: npt.NDArray[np.float64],
+        point: Point,
+        auto_s: bool = False,
+        auto_s_cutoff_freq: float = 10,
+        **kwargs,
     ) -> UnivariateSplineFunction:
         check_scipy()
+        s = [None for _ in range(3)]
+        if auto_s:
+            #if the weights are equal to 1, s should be chosen based on the nuimber of points and the noise variance
+            #Dierckx, P. (1981). An algorithm for cubic spline fitting with convexity constraints. Computing, 26(4), 327–334.
+            
+            # using a high pass filter to isolate the noise variance:
+            #Schulze, H. G., et al. (2011). Denoising of spectra with no user input: a spline‐smoothing approach. Journal of Raman Spectroscopy, 42(8), 1630-1638.
+            
+            sos = butter(
+                N=4,
+                Wn=auto_s_cutoff_freq,
+                btype="highpass",
+                fs=1 / np.median(np.diff(index[index > 0])),
+                output="sos",
+            )
+
+            for i in range(3):
+                _noise = sosfilt(sos, point.data[:, i])
+                _trim = int(len(point) * 0.05)
+                _noise_variance = np.var(_noise[1+_trim : -2-_trim])
+                s[i] = _noise_variance * len(index)
+            kwargs.pop("s", None)
+
         splines = tuple(
-            UnivariateSpline(index, point.data[:, i], **kwargs) for i in range(3)
+            UnivariateSpline(index, point.data[:, i], **(kwargs | {"s": s[i]}))
+            for i in range(3)
         )
         return UnivariateSplineFunction({0: splines})
 
@@ -397,7 +426,7 @@ class UnivariateSplineFunction:
         splines = tuple(BSpline(*d.values()) for d in data)
         return cls({0: splines})
 
-    
+
 @dataclass
 class InterpolatingSplineFunction:
     splines: tuple[BSpline, BSpline, BSpline]
