@@ -448,7 +448,7 @@ class SlerpFunction:
             return Quaternion(odata)
 
     def to_dict(self) -> dict:
-        return {"index": self.index.to_list(), "data": self.data.to_dict()}
+        return {"index": self.index.tolist(), "data": self.data.to_dict()}
 
     @staticmethod
     def from_dict(data: dict) -> SlerpFunction:
@@ -541,7 +541,7 @@ class SquadFunction:
 
     def to_dict(self) -> dict:
         return {
-            "index": self.index.to_list(),
+            "index": self.index.tolist(),
             "data": self.data.to_dict(),
             "q": self.q.to_dict(),
         }
@@ -569,7 +569,7 @@ class RotationSplineFunction:
 
     def to_dict(self) -> dict:
         return {
-            "index": self.index.to_list(),
+            "index": self.index.tolist(),
             "data": self.data.to_dict(),
         }
 

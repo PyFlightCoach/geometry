@@ -413,8 +413,8 @@ class UnivariateSplineFunction:
             knots, coeffs, degree = _spline._eval_args
             _out.append(
                 {
-                    "knots": knots.to_list(),
-                    "coeffs": coeffs.to_list(),
+                    "knots": knots.tolist(),
+                    "coeffs": coeffs.tolist(),
                     "degree": degree,
                 }
             )
@@ -451,8 +451,8 @@ class InterpolatingSplineFunction:
             knots, coeffs, degree = _spline._eval_args
             _out.append(
                 {
-                    "knots": knots.to_list(),
-                    "coeffs": coeffs.to_list(),
+                    "knots": knots.tolist(),
+                    "coeffs": coeffs.tolist(),
                     "degree": degree,
                 }
             )

@@ -323,7 +323,7 @@ class Base:
         if len(self) == 1:
             return {key: getattr(self, key)[0] for key in self.cols}
         else:
-            return {key: getattr(self, key).to_list() for key in self.cols}
+            return {key: getattr(self, key).tolist() for key in self.cols}
 
     @classmethod
     def from_dict(Cls, data):
