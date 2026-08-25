@@ -360,7 +360,7 @@ def normalize_vector(point: Point):
 
 @dataclass
 class UnivariateSplineFunction:
-    splines: dict[int, tuple[UnivariateSpline, UnivariateSpline, UnivariateSpline]] = (
+    splines: dict[int, tuple[BSpline, BSpline, BSpline]] = (
         field(default_factory=list)
     )
 
@@ -371,7 +371,7 @@ class UnivariateSplineFunction:
         auto_s: bool = False,
         auto_s_cutoff_freq: float = 10,
         **kwargs,
-    ) -> UnivariateSplineFunction:
+    ) -> BSpline:
         check_scipy()
         s = [None for _ in range(3)]
         if auto_s:
@@ -397,7 +397,7 @@ class UnivariateSplineFunction:
             kwargs.pop("s", None)
 
         splines = tuple(
-            UnivariateSpline(index, point.data[:, i], **(kwargs | {"s": s[i]}))
+            BSpline.construct_fast(*UnivariateSpline(index, point.data[:, i], **(kwargs | {"s": s[i]}))._eval_args) 
             for i in range(3)
         )
         return UnivariateSplineFunction({0: splines})
@@ -410,12 +410,11 @@ class UnivariateSplineFunction:
     def to_dict(self) -> tuple[dict, dict, dict]:
         _out = []
         for _spline in self.splines[0]:
-            knots, coeffs, degree = _spline._eval_args
             _out.append(
                 {
-                    "knots": knots.tolist(),
-                    "coeffs": coeffs.tolist(),
-                    "degree": degree,
+                    "knots": _spline.t.tolist(),
+                    "coeffs": _spline.c.tolist(),
+                    "degree": _spline.k,
                 }
             )
         return tuple(_out)
@@ -423,7 +422,11 @@ class UnivariateSplineFunction:
     @classmethod
     def from_dict(cls, data: tuple[dict, dict, dict]) -> UnivariateSplineFunction:
         check_scipy()
-        splines = tuple(BSpline(*d.values()) for d in data)
+
+        def make_spline(knots, coeffs, degree):
+            return BSpline.construct_fast(np.array(knots), np.array(coeffs), degree)
+        
+        splines = tuple(make_spline(*d.values()) for d in data)
         return cls({0: splines})
 
 
@@ -448,12 +451,11 @@ class InterpolatingSplineFunction:
     def to_dict(self) -> tuple[dict, dict, dict]:
         _out = []
         for _spline in self.splines:
-            knots, coeffs, degree = _spline._eval_args
             _out.append(
                 {
-                    "knots": knots.tolist(),
-                    "coeffs": coeffs.tolist(),
-                    "degree": degree,
+                    "knots": _spline.t.tolist(),
+                    "coeffs": _spline.c.tolist(),
+                    "degree": _spline.k,
                 }
             )
         return tuple(_out)
@@ -461,5 +463,5 @@ class InterpolatingSplineFunction:
     @classmethod
     def from_dict(cls, data: tuple[dict, dict, dict]) -> InterpolatingSplineFunction:
         check_scipy()
-        splines = tuple(BSpline(*d.values()) for d in data)
+        splines = tuple(BSpline.construct_fast(*d.values()) for d in data)
         return cls(splines)
