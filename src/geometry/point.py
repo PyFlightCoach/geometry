@@ -373,7 +373,7 @@ class UnivariateSplineFunction:
         **kwargs,
     ) -> BSpline:
         check_scipy()
-        s = [None for _ in range(3)]
+        s = [kwargs.get("s", None) for _ in range(3)]
         if auto_s:
             #if the weights are equal to 1, s should be chosen based on the nuimber of points and the noise variance
             #Dierckx, P. (1981). An algorithm for cubic spline fitting with convexity constraints. Computing, 26(4), 327–334.
@@ -395,7 +395,7 @@ class UnivariateSplineFunction:
                 _noise_variance = np.var(_noise[1+_trim : -2-_trim])
                 s[i] = _noise_variance * len(index)
             kwargs.pop("s", None)
-
+        
         splines = tuple(
             BSpline.construct_fast(*UnivariateSpline(index, point.data[:, i], **(kwargs | {"s": s[i]}))._eval_args) 
             for i in range(3)
