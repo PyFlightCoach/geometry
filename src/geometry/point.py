@@ -26,7 +26,7 @@ from .base import Base
 
 try:
     from scipy.interpolate import BSpline, UnivariateSpline, make_interp_spline
-    from scipy.signal import butter, sosfilt
+    from scipy.signal import butter, sosfiltfilt
     from scipy.spatial.transform import Rotation, RotationSpline
 
     HAS_SCIPY = True
@@ -390,14 +390,18 @@ class UnivariateSplineFunction:
             )
 
             for i in range(3):
-                _noise = sosfilt(sos, point.data[:, i])
+                _noise = sosfiltfilt(sos, point.data[:, i])
                 _trim = int(len(point) * 0.05)
                 _noise_variance = np.var(_noise[1+_trim : -2-_trim])
                 s[i] = _noise_variance * len(index)
             kwargs.pop("s", None)
-        
+        w = np.ones(len(index))
+        trim_len = int(len(index) * 0.05)
+        w.put(np.arange(trim_len), 0.5)  
+        w.put(np.arange(len(index) - trim_len, len(index)), 0.5)
+
         splines = tuple(
-            BSpline.construct_fast(*UnivariateSpline(index, point.data[:, i], **(kwargs | {"s": s[i]}))._eval_args) 
+            BSpline.construct_fast(*UnivariateSpline(index, point.data[:, i], w=w, **(kwargs | {"s": s[i]}))._eval_args) 
             for i in range(3)
         )
         return UnivariateSplineFunction({0: splines})
