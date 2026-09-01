@@ -142,7 +142,44 @@ def test_to_axis_angle():
     
     assert_almost_equal( q1.to_axis_angle(), PZ(np.pi/4))
 
+def test_to_axis_angle_q_and_neg_q_match():
+    q = Quaternion.from_euler(PZ(np.pi / 4))
 
+    np.testing.assert_array_almost_equal(
+        q.to_axis_angle().data,
+        (-q).to_axis_angle().data,
+    )
+
+
+def test_to_axis_angle_identity():
+    q = Quaternion.from_axis_angle(Point([0.0, 0.0, 0.0]))
+
+    np.testing.assert_array_almost_equal(
+        q.to_axis_angle().data,
+        np.zeros((1,3)),
+    )
+
+
+def test_to_axis_angle_near_identity():
+    point = Point([1e-7, 0.0, 0.0])
+    q = Quaternion.from_axis_angle(point)
+
+    np.testing.assert_allclose(
+        q.to_axis_angle().data,
+        point.data,
+        atol=1e-12,
+    )
+
+
+def test_to_axis_angle_uses_shortest_rotation():
+    point = PZ(3 * np.pi / 2)
+    q = Quaternion.from_axis_angle(point)
+
+    # 270 deg about +z is equivalent to 90 deg about -z
+    np.testing.assert_allclose(
+        q.to_axis_angle().data,
+        PZ(-np.pi / 2).data,
+    )
 
 def test_axis_rates():
     q    = Quaternion.from_euler(Point(0.0, 0.0, np.pi/2))

@@ -149,45 +149,46 @@ class Quaternion(Base):
 
     @staticmethod
     def from_axis_angle(axangles: Point) -> Quaternion:
-        small = 1e-6
         angles = abs(axangles)
 
-        qdat = np.tile(np.array([1.0, 0.0, 0.0, 0.0]), (len(angles), 1))
+        c = np.cos(angles / 2)
 
-        if angles.any() >= small:
-            baxangles = Point(axangles.data[angles >= small])
-            bangles = angles[angles >= small]
+        # sin(angle / 2) / angle, including the angle=0 limit
+        scale = 0.5 * np.sinc(angles / (2 * np.pi))
 
-            s = np.sin(bangles / 2)
-            c = np.cos(bangles / 2)
-            axis = baxangles / bangles
+        qdat = np.array([
+            c,
+            axangles.x * scale,
+            axangles.y * scale,
+            axangles.z * scale,
+        ]).T
 
-            qdat[angles >= small] = np.array([c, axis.x * s, axis.y * s, axis.z * s]).T
-
-        # qdat[abs(Quaternions(qdat)) < .001] = np.array([[1, 0, 0, 0]])
         return Quaternion(qdat)
 
     def to_axis_angle(self) -> Point:
-        a = self._to_axis_angle()
-        b = (-self)._to_axis_angle()
+        q = self.copy()
 
-        res = a.data
-        replocs = abs(a) > abs(b)
-        res[replocs, :] = b.data[replocs, :]
+        replocs = q.w < 0
+        q.data[replocs, :] *= -1
 
-        return Point(res)
+        return q._to_axis_angle()
 
     def _to_axis_angle(self) -> Point:
-        """to a point of axis angles. must be normalized first."""
-        angle = 2 * np.arccos(self.w)
-        s = np.sqrt(1 - self.w**2)
-        np.array(s)[np.array(s) < 1e-6] = 1.0
-        with np.errstate(divide="ignore", invalid="ignore"):
-            sangle = angle / s
-            sangle[sangle == np.inf] = 0
-            sangle[np.isnan(sangle)] = 0
-        res = self.axis * sangle
-        return res
+        """To a point of axis angles. Must be normalized first."""
+
+        w = np.clip(self.w, -1.0, 1.0)
+
+        angle = 2 * np.arccos(w)
+        s = np.sqrt(1 - w**2)
+
+        sangle = np.divide(
+            angle,
+            s,
+            out=np.full_like(angle, 2.0),
+            where=s >= 1e-6,
+        )
+
+        return self.axis * sangle
 
     @staticmethod
     def axis_rates(q: Quaternion, qdot: Quaternion) -> Point:
