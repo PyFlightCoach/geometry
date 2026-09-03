@@ -47,8 +47,7 @@ def get_index(
     increasing, is the array going up or down, if not given it will be inferred from the data
     """
 
-#    index = np.searchsorted(arr, value, "left" )
-
+    #    index = np.searchsorted(arr, value, "left" )
 
     increasing = np.sign(np.diff(arr).mean()) if increasing is None else increasing
     res = np.argwhere(arr == value)
@@ -134,12 +133,19 @@ def round_slice(sli: npt.ArrayLike | slice | Number) -> npt.ArrayLike | slice | 
     else:
         raise ValueError(f"Cannot expand {sli}")
 
-def inclusive_slice(arr: npt.ArrayLike, sli: slice | Number | npt.ArrayLike | None) -> npt.ArrayLike:
+
+def inclusive_slice(
+    arr: npt.ArrayLike, sli: slice | Number | npt.ArrayLike | None
+) -> npt.ArrayLike:
     """slice an array but include the right boundary"""
-    
+
     if isinstance(sli, slice):
         oarr = arr[sli]
-        return np.concatenate([oarr, [oarr[-1]+1]]) if sli.stop is not None and sli.stop<=(len(arr)-1) else oarr
+        return (
+            np.concatenate([oarr, [oarr[-1] + 1]])
+            if sli.stop is not None and sli.stop <= (len(arr) - 1)
+            else oarr
+        )
     elif isinstance(sli, Number):
         return arr[int(sli)]
     elif pd.api.types.is_list_like(sli):

@@ -25,7 +25,12 @@ import pandas as pd
 from .base import Base
 
 try:
-    from scipy.interpolate import BSpline, UnivariateSpline, make_interp_spline
+    from scipy.interpolate import (
+        BSpline,
+        UnivariateSpline,
+        make_interp_spline,
+        make_splrep,
+    )
     from scipy.signal import butter, sosfiltfilt
     from scipy.spatial.transform import Rotation, RotationSpline
 
@@ -251,13 +256,13 @@ class Point(Base):
         )
         return cross(self, cvecs)
 
-    def univariate_spline(
+    def smoothing_spline(
         self, index: npt.NDArray[np.float64], **kwargs
     ) -> Callable[[npt.NDArray[np.float64]], Point]:
 
-        return UnivariateSplineFunction.from_point(index, self, **kwargs)
+        return SmoothingSplineFunction.from_point(index, self, **kwargs)
 
-    def interp_spline(
+    def interpolating_spline(
         self, index: npt.NDArray[np.float64], **kwargs
     ) -> Callable[[npt.NDArray[np.float64]], Point]:
 
@@ -359,10 +364,8 @@ def normalize_vector(point: Point):
 
 
 @dataclass
-class UnivariateSplineFunction:
-    splines: dict[int, tuple[BSpline, BSpline, BSpline]] = (
-        field(default_factory=list)
-    )
+class SmoothingSplineFunction:
+    splines: dict[int, tuple[BSpline, BSpline, BSpline]]
 
     @staticmethod
     def from_point(
@@ -371,7 +374,7 @@ class UnivariateSplineFunction:
         auto_s: bool = False,
         auto_s_cutoff_freq: float = 10,
         **kwargs,
-    ) -> BSpline:
+    ) -> SmoothingSplineFunction:
         check_scipy()
         s = [kwargs.get("s", None) for _ in range(3)]
         if auto_s:
@@ -385,7 +388,7 @@ class UnivariateSplineFunction:
                 N=4,
                 Wn=auto_s_cutoff_freq,
                 btype="highpass",
-                fs=1 / np.median(np.diff(index[index > 0])),
+                fs=1 / np.median(np.diff(index)),
                 output="sos",
             )
 
@@ -401,10 +404,10 @@ class UnivariateSplineFunction:
         w.put(np.arange(len(index) - trim_len, len(index)), 0.5)
 
         splines = tuple(
-            BSpline.construct_fast(*UnivariateSpline(index, point.data[:, i], w=w, **(kwargs | {"s": s[i]}))._eval_args) 
+            make_splrep(index, point.data[:, i], w=w, **(kwargs | {"s": max(s[i], 1e-4)}))
             for i in range(3)
         )
-        return UnivariateSplineFunction({0: splines})
+        return SmoothingSplineFunction({0: splines})
 
     def __call__(self, x: npt.NDArray[np.float64], n=0) -> Point:
         if not n in self.splines:
@@ -424,13 +427,13 @@ class UnivariateSplineFunction:
         return tuple(_out)
 
     @classmethod
-    def from_dict(cls, data: tuple[dict, dict, dict]) -> UnivariateSplineFunction:
+    def from_dict(cls, data: tuple[dict, dict, dict]) -> SmoothingSplineFunction:
         check_scipy()
 
         def make_spline(knots, coeffs, degree):
             return BSpline.construct_fast(np.array(knots), np.array(coeffs), degree)
         
-        splines = tuple(make_spline(*d.values()) for d in data)
+        splines = tuple(make_spline(**d) for d in data)
         return cls({0: splines})
 
 

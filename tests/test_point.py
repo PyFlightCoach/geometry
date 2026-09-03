@@ -129,7 +129,7 @@ def test_interp_spline():
         [3,1,0]
     ]))
 
-    bspline = p.interp_spline(np.arange(4))
+    bspline = p.interpolating_spline(np.arange(4))
     
     xs = np.linspace(0,3,100)
     splinepoints=bspline(xs)
@@ -148,7 +148,7 @@ def test_univariate_spline():
         [3,1,0]
     ]))
 
-    spline = p.univariate_spline(np.arange(4))
+    spline = p.smoothing_spline(np.arange(4), s=0.5)
 
     xs = np.linspace(0,3,100)
     splinepoints=spline(xs)
