@@ -36,7 +36,7 @@ def handle_slice(fun: Callable[[npt.NDArray, Number], Number]):
 def get_index(
     arr: npt.NDArray,
     value: Number,
-    missing: float | Literal["throw"] = "throw",
+    missing: float | Literal["throw"] | None = "throw",
     direction: Literal["forward", "backward"] = "forward",
     increasing: bool | None = None,
 ):
@@ -154,3 +154,40 @@ def inclusive_slice(
         return arr
     else:
         raise ValueError(f"Cannot expand {sli}")
+
+
+def make_smoothing_spline(data: npt.ArrayLike, index: npt.ArrayLike = None, auto_s: bool = True, auto_s_cutoff_freq = 10, min_s: float=1e-4, **kwargs):
+    from scipy.interpolate import make_splrep
+    from scipy.signal import butter, sosfiltfilt
+    
+    index = np.arange(len(data)) if index is None else index
+
+    if auto_s:
+        #if the weights are equal to 1, s should be chosen based on the nuimber of points and the noise variance
+        #Dierckx, P. (1981). An algorithm for cubic spline fitting with convexity constraints. Computing, 26(4), 327–334.
+        
+        # using a high pass filter to isolate the noise variance:
+        #Schulze, H. G., et al. (2011). Denoising of spectra with no user input: a spline‐smoothing approach. Journal of Raman Spectroscopy, 42(8), 1630-1638.
+        
+        sos = butter(
+            N=4,
+            Wn=auto_s_cutoff_freq,
+            btype="highpass",
+            fs=1 / np.median(np.diff(index)),
+            output="sos",
+        )
+    
+        _noise = sosfiltfilt(sos, data)
+        _trim = int(len(data) * 0.05)
+        _noise_variance = np.var(_noise[1+_trim : -2-_trim])
+        
+        kwargs['s'] = _noise_variance * len(index)
+    
+    kwargs['s'] = max(kwargs.get("s", min_s), min_s)
+
+    w = np.ones(len(index))
+    trim_len = int(len(index) * 0.05)
+    w.put(np.arange(trim_len), 0.5)  
+    w.put(np.arange(len(index) - trim_len, len(index)), 0.5)
+
+    return make_splrep(index, data, w=w, **kwargs)

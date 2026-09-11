@@ -23,6 +23,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from .base import Base
+from .utils import make_smoothing_spline
 
 try:
     from scipy.interpolate import (
@@ -376,38 +377,13 @@ class SmoothingSplineFunction:
         **kwargs,
     ) -> SmoothingSplineFunction:
         check_scipy()
-        s = [kwargs.get("s", None) for _ in range(3)]
-        if auto_s:
-            #if the weights are equal to 1, s should be chosen based on the nuimber of points and the noise variance
-            #Dierckx, P. (1981). An algorithm for cubic spline fitting with convexity constraints. Computing, 26(4), 327–334.
-            
-            # using a high pass filter to isolate the noise variance:
-            #Schulze, H. G., et al. (2011). Denoising of spectra with no user input: a spline‐smoothing approach. Journal of Raman Spectroscopy, 42(8), 1630-1638.
-            
-            sos = butter(
-                N=4,
-                Wn=auto_s_cutoff_freq,
-                btype="highpass",
-                fs=1 / np.median(np.diff(index)),
-                output="sos",
-            )
-
-            for i in range(3):
-                _noise = sosfiltfilt(sos, point.data[:, i])
-                _trim = int(len(point) * 0.05)
-                _noise_variance = np.var(_noise[1+_trim : -2-_trim])
-                s[i] = _noise_variance * len(index)
-            kwargs.pop("s", None)
-        w = np.ones(len(index))
-        trim_len = int(len(index) * 0.05)
-        w.put(np.arange(trim_len), 0.5)  
-        w.put(np.arange(len(index) - trim_len, len(index)), 0.5)
-
         splines = tuple(
-            make_splrep(index, point.data[:, i], w=w, **(kwargs | {"s": max(s[i], 1e-4)}))
+            make_smoothing_spline(point.data[:, i], index, auto_s, auto_s_cutoff_freq, **kwargs)
             for i in range(3)
         )
-        return SmoothingSplineFunction({0: splines})
+        return SmoothingSplineFunction(
+            {0: splines}
+        )
 
     def __call__(self, x: npt.NDArray[np.float64], n=0) -> Point:
         if not n in self.splines:
