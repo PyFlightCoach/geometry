@@ -11,11 +11,17 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
-from typing import Self, Literal
+
+from numbers import Number
+from typing import Literal, Self
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from numbers import Number
+
+
+class ExtrapolationError(Exception):
+    """Raised when interpolation would require values outside the source range."""
 
 
 def dprep(func):
@@ -24,14 +30,14 @@ def dprep(func):
     is the same as self, 1, or len(self) == 1 it should construct the arguments for the decorated function.
     """
 
-    def wrapper(self, b):
+    def wrapper(self, b, *args, **kwargs):
         bdat = self._dprep(b)
 
         if len(bdat) > 1 and len(self) == 1:
             a = self.tile(len(bdat))
         else:
             a = self
-        return func(a, bdat)
+        return func(a, bdat, *args, **kwargs)
 
     return wrapper
 
@@ -48,7 +54,7 @@ class Base:
         if len(kwargs) > 0:
             if len(args) > 0:
                 raise TypeError("Cannot accept args and kwargs at the same time")
-            if all([c in kwargs for c in self.__class__.cols]):
+            if all(c in kwargs for c in self.__class__.cols):
                 args = [kwargs[c] for c in self.__class__.cols]
             elif "data" in kwargs:
                 args = [kwargs["data"]]
@@ -58,12 +64,10 @@ class Base:
                 )
 
         if len(args) == 1:
-            if isinstance(args[0], np.ndarray) or isinstance(
-                args[0], list
-            ):  # data was passed directly
+            if isinstance(args[0], (np.ndarray, list)):  # data was passed directly
                 self.data = self.__class__._clean_data(np.array(args[0]))
 
-            elif all([isinstance(a, self.__class__) for a in args[0]]):
+            elif all(isinstance(a, self.__class__) for a in args[0]):
                 # a list of self.__class__ is passed, concatenate into one
                 self.data = self.__class__._clean_data(
                     np.concatenate([a.data for a in args[0]])
@@ -80,9 +84,9 @@ class Base:
             # three args passed, each represents a col
             if all(isinstance(arg, Number) for arg in args):
                 self.data = self.__class__._clean_data(np.array(args))
-            elif all(isinstance(arg, np.ndarray) for arg in args):
-                self.data = self.__class__._clean_data(np.array(args).T)
-            elif all(isinstance(arg, list) for arg in args):
+            elif all(isinstance(arg, np.ndarray) for arg in args) or all(
+                isinstance(arg, list) for arg in args
+            ):
                 self.data = self.__class__._clean_data(np.array(args).T)
             elif all(isinstance(arg, pd.Series) for arg in args):
                 self.data = self.__class__._clean_data(
@@ -105,7 +109,7 @@ class Base:
             for row in d
         ]
 
-    def to_numpy(self, cols: str | list = None):
+    def to_numpy(self, cols: str | list | None = None):
         cols = self.cols if cols is None else cols
         return np.column_stack([getattr(self, c) for c in cols])
 
@@ -136,7 +140,7 @@ class Base:
             a = a.tile(len(b))
         elif len(b) == 1 and len(a) > 1:
             b = b.tile(len(a))
-        elif len(a) > 1 and len(b) > 1 and not len(a) == len(b):
+        elif len(a) > 1 and len(b) > 1 and len(a) != len(b):
             raise TypeError(
                 f"lengths of passed arguments must be equal or 1, got {len(a)}, {len(b)}"
             )
@@ -154,13 +158,12 @@ class Base:
             return self.__class__(getattr(np, name)(self.data))
         else:
             for col in self.__class__.cols:
-                if len(name) > len(col):
-                    if name[: len(col)] == col:
-                        try:
-                            id = int(name[len(col) :])
-                        except ValueError:
-                            break
-                        return getattr(self, col)[id]
+                if len(name) > len(col) and name[: len(col)] == col:
+                    try:
+                        id = int(name[len(col) :])
+                    except ValueError:
+                        break
+                    return getattr(self, col)[id]
 
         raise AttributeError(f"Cannot get attribute {name}")
 
@@ -189,13 +192,13 @@ class Base:
                     raise ValueError(f"array shape {other.shape} not handled")
             else:
                 raise ValueError(f"array shape {other.shape} not handled")
-        elif isinstance(other, float) or isinstance(other, int):
+        elif isinstance(other, (float, int)):
             return np.full((l, w), other)
         elif isinstance(other, Base):
             a, b = self.__class__.length_check(self, other)
             return self._dprep(b.data)
         else:
-            raise ValueError(f"unhandled datatype ({other.__class__.name})")
+            raise TypeError(f"unhandled datatype ({other.__class__.name})")
 
     def radians(self) -> Self:
         return self.__class__(np.radians(self.data))
@@ -206,12 +209,21 @@ class Base:
     def count(self) -> int:
         return len(self)
 
+    def sum(self) -> Self:
+        return self.__class__(np.sum(self.data, axis=0))
+
     def __len__(self) -> int:
         return self.data.shape[0]
 
     @property
     def ends(self) -> Self:
         return self.__class__(self.data[[0, -1], :])
+
+    @dprep
+    def almost_equal(self, other, tol: float = 1e-6) -> bool:
+
+        diff = np.abs(self.data - other.data)
+        return np.all(diff < tol)
 
     @dprep
     def __eq__(self, other):
@@ -272,22 +284,26 @@ class Base:
         return np.einsum("ij,ij->i", self.data, other)
 
     def diff(
-        self, dt: npt.NDArray, method: Literal["gradient", "diff"] = "gradient"
+        self, dt: npt.NDArray, method: Literal["diff", "gradient"] = "diff"
     ) -> Self:
+        if len(self) == 1:
+            return self.__class__(np.zeros(self.data.shape))
+
         if not pd.api.types.is_list_like(dt):
             dt = np.full(len(self), dt)
-        self, dt = Base.length_check(self, dt)
-        if method == "gradient":
-            data = (
-                np.gradient(self.data, axis=0)
-                if len(self) > 1
-                else np.zeros(self.data.shape)
-            )
-        else:
-            data = np.diff(self.data, axis=0)
+        _self, dt = Base.length_check(self, dt)
+        dt = np.tile(dt, (len(self.cols), 1)).T
+        _method = getattr(np, method) if isinstance(method, str) else method
 
-        dt = dt if method == "gradient" else dt[:-1]
-        return self.__class__(data / np.tile(dt, (len(self.__class__.cols), 1)).T)
+        data = _method(_self.data, axis=0)
+
+        if method == "diff":
+            data = np.divide(data, dt[:-1, :])
+            data = np.pad(data, ((0, 1), (0, 0)), mode="edge")
+        else:
+            data = np.divide(data, dt)
+
+        return self.__class__(data)
 
     def to_pandas(self, prefix="", suffix="", columns=None, index=None):
         if columns is not None:
@@ -307,7 +323,7 @@ class Base:
         if len(self) == 1:
             return {key: getattr(self, key)[0] for key in self.cols}
         else:
-            return {key: getattr(self, key) for key in self.cols}
+            return {key: getattr(self, key).tolist() for key in self.cols}
 
     @classmethod
     def from_dict(Cls, data):
@@ -361,7 +377,7 @@ class Base:
         return self.__class__(np.unwrap(self.data, discont=discont, axis=0))
 
     def filter(self, order, cutoff, ts: np.ndarray = None):
-        from scipy.signal import butter, freqz, filtfilt
+        from scipy.signal import butter, filtfilt
 
         if ts is None:
             ts = np.array(range(len(self)))
@@ -413,38 +429,25 @@ class Base:
 
     def linterp(
         self,
-        index: npt.NDArray | pd.Index,
+        index: float | npt.NDArray | None = None,
         extrapolate: Literal["throw", "nearest"] = "throw",
     ):
-        "linear interpolation"
-        index = pd.Index(np.arange(len(self)) if index is None else index)
-        assert len(index) == len(self)
-        assert pd.Index(index).is_monotonic_increasing
+        """linear interpolation"""
+        index = np.arange(len(self)) if index is None else index
 
         def dolinterp(ts: npt.NDArray | Number):
-            starts = index.get_indexer(ts, method="ffill")
-            stops = index.get_indexer(ts, method="bfill")
-            if np.any(starts * stops < 0) and extrapolate == "throw":
-                raise Exception("Cannot extrapolate beyond parent range")
-            return self.__class__(
-                np.column_stack(
-                    [
-                        np.interp(
-                            ts,
-                            index,
-                            self.data[:, i],
-                            self.data[0, i],
-                            self.data[-1, i],
-                        )
-                        for i, col in enumerate(self.cols)
-                    ]
-                )
-            )
-            # return lambda t: a + (b - a) * np.clip(t, 0, 1)
+
+            if (
+                np.any(ts < index[0]) or np.any(ts > index[-1])
+            ) and extrapolate == "throw":
+                raise ExtrapolationError("Cannot extrapolate beyond parent range")
+            _res = [np.interp(ts, index, getattr(self, _col)) for _col in self.cols]
+            return self.__class__(np.column_stack(_res))
 
         return dolinterp
 
     def bspline(self, index: npt.NDArray | pd.Index = None):
+
         from scipy.interpolate import make_interp_spline
 
         bspline = make_interp_spline(
@@ -452,7 +455,9 @@ class Base:
         )
         return lambda i: self.__class__(bspline(i))
 
-    def interpolate(self, index: npt.NDArray | pd.Index = None, method: str = None):
+    def interpolate(
+        self, index: npt.NDArray | pd.Index = None, method: str | None = None
+    ):
         if method is None:
             match self.__class__.__name__:
                 case "Point":
@@ -460,19 +465,39 @@ class Base:
                 case "Quaternion":
                     method = "slerp"
                 case "Time":
-                    method = "linterp"
+                    method = "linterp_recalculate_dt"
         return getattr(self, method)(index)
 
-    def plot(self, index=None, **kwargs):
+    def plot(
+        self,
+        index: npt.NDArray | pd.Index = None,
+        restart_color: bool = False,
+        dash: str | None = None,
+        **kwargs,
+    ):
+        import plotly.express as px
         import plotly.graph_objects as go
 
         fig = go.Figure()
-        for col in self.cols:
+        for i, col in enumerate(self.cols):
+            line = {
+                **(
+                    {
+                        "color": px.colors.qualitative.Plotly[
+                            i % len(px.colors.qualitative.Plotly)
+                        ]
+                    }
+                    if restart_color
+                    else {}
+                ),
+                **({"dash": dash} if dash is not None else {}),
+            }
             fig.add_trace(
                 go.Scatter(
                     x=np.arange(len(self)) if index is None else index,
                     y=getattr(self, col),
                     name=col,
+                    line=line,
                     **kwargs,
                 )
             )
@@ -482,10 +507,7 @@ class Base:
     def where(self, condition, other):
         """returns a new instance of self.__class__ where the values are taken from self where condition is False, and from other where condition is True."""
         other = self.__class__.type_check(other)
-        self, other = self.__class__.length_check(self, other)
+        _self, other = self.__class__.length_check(self, other)
         return self.__class__(
-            np.where(
-                np.tile(condition, (len(self.cols),1)).T, 
-                other.data, 
-                self.data)
+            np.where(np.tile(condition, (len(_self.cols), 1)).T, other.data, _self.data)
         )

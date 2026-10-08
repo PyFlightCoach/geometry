@@ -1,5 +1,6 @@
 """This module contains helper functions for unit testing geometry objects"""
 import numpy as np
+
 from geometry import Base
 
 

@@ -1,10 +1,12 @@
-from geometry.point import Point, cross, PX, PY, PZ, P0, is_perpendicular
-
 import unittest
 from math import pi
-from pytest import mark, approx, fixture, raises
+
 import numpy as np
+from pytest import approx, fixture, mark, raises
+
 from geometry.checks import assert_equal
+from geometry.point import P0, PX, PY, PZ, Point, cross, is_perpendicular
+
 
 def test_init():
     p = Point(1,2,3)
@@ -119,7 +121,7 @@ def test_remove_outliers_fail():
     assert np.sum(np.isnan(p.data)) == 0
     
 
-def test_bspline():
+def test_interp_spline():
     p = Point(np.array([
         [0,0,0],
         [1,0,0],
@@ -127,12 +129,30 @@ def test_bspline():
         [3,1,0]
     ]))
 
-    bspline = p.bspline()
+    bspline = p.interp_spline(np.arange(4))
     
     xs = np.linspace(0,3,100)
     splinepoints=bspline(xs)
-    
-    fig = splinepoints.plot3d(mode="lines")
-    fig.add_traces(p.plot3d().data)
-    fig.show()
+
+    assert isinstance(splinepoints, Point)
+    assert len(splinepoints) == 100
+
+
 #    px.line(x=xs, y=.data).show()
+
+def test_univariate_spline():
+    p = Point(np.array([
+        [0,0,0],
+        [1,0,0],
+        [2,1,0],
+        [3,1,0]
+    ]))
+
+    spline = p.univariate_spline(np.arange(4))
+
+    xs = np.linspace(0,3,100)
+    splinepoints=spline(xs)
+
+    assert isinstance(splinepoints, Point)
+    assert len(splinepoints) == 100
+

@@ -10,14 +10,16 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-from geometry import Base, Point, Quaternion, P0, Q0, Coord
+
+from typing import ClassVar, Literal, Self
 
 import numpy as np
-from typing import Self, Literal
+
+from geometry import P0, Q0, Base, Coord, Point, Quaternion
 
 
 class Transformation(Base):
-    cols = ["x", "y", "z", "rw", "rx", "ry", "rz"]
+    cols: ClassVar[list[str]] = ["x", "y", "z", "rw", "rx", "ry", "rz"]
 
     def __init__(self, *args, **kwargs):
         if len(args) == len(kwargs) == 0:
