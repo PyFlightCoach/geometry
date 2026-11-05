@@ -1,13 +1,22 @@
 import numpy as np
 import pandas as pd
-import quaternion
 from pytest import approx, mark
 from rowan.interpolate import slerp
+
+try:
+    import quaternion
+except ModuleNotFoundError:
+    quaternion = None
 
 from geometry import Euldeg, Euler
 from geometry.checks import assert_almost_equal
 from geometry.point import P0, PX, PY, PZ, Point
 from geometry.quaternion import Q0, Quaternion
+
+requires_numpy_quaternion = mark.skipif(
+    quaternion is None,
+    reason="numpy-quaternion is not installed",
+)
 
 
 def test_init():
@@ -16,6 +25,7 @@ def test_init():
     np.testing.assert_array_equal(data, qs.data)
 
 
+@requires_numpy_quaternion
 def test_mul():
     q1 = Quaternion(np.random.random((2, 4))).norm()
     q2 = Quaternion(np.random.random((2, 4))).norm()
@@ -46,6 +56,7 @@ def test_from_euler_unwrap():
 
 
 
+@requires_numpy_quaternion
 def test_norm():
     qarr = Quaternion(np.random.random( (2,4)))
 
@@ -59,6 +70,7 @@ def test_norm():
         earr
     )
 
+@requires_numpy_quaternion
 def test_conjugate():
 
     qarr = Quaternion(np.random.random((6, 4))).norm()
@@ -74,6 +86,7 @@ def test_conjugate():
         earr
     )
 
+@requires_numpy_quaternion
 def test_inverse():
 
     q = Quaternion(1,0,0,0)
@@ -268,5 +281,4 @@ def test_backward_diff_problem():
     data = pd.read_csv('tests/quat_body_diff_test.csv')
     ps = Quaternion(data.iloc[:,1:]).body_diff(data.iloc[:,0].to_numpy())
     assert np.mean(ps.y[100:200]) > 0
-
 
