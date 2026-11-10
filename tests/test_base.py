@@ -1,5 +1,5 @@
 from geometry.base import Base
-from pytest import mark, approx, raises
+from pytest import mark, approx, raises, importorskip
 import numpy as np
 import pandas as pd
 
@@ -240,6 +240,7 @@ def test_from_numpy():
     np.testing.assert_array_equal(p.a, [3,3])
 
 def test_plot():
+    importorskip("plotly")
     abc = ABC(np.random.random((10,3)))
     plot = abc.plot()
     plot2 = abc.plot(np.arange(len(abc))/10)
