@@ -1,5 +1,6 @@
 import unittest
 from math import pi
+from pathlib import Path
 
 import numpy as np
 from pytest import approx, fixture, mark, raises
@@ -117,7 +118,7 @@ def test_remove_outliers():
 
 def test_remove_outliers_fail():
     import pandas as pd
-    p = Point(pd.read_csv('tests/test_remove_outliers.csv').iloc[:,1:])
+    p = Point(pd.read_csv(Path(__file__).parent / "test_remove_outliers.csv").iloc[:,1:])
     assert np.sum(np.isnan(p.data)) == 0
     
 

@@ -25,6 +25,37 @@ def test_init():
     np.testing.assert_array_equal(data, qs.data)
 
 
+def test_hamilton_product_order_and_components():
+    # For (a, b, c, d)(e, f, g, h), the Hamilton product is
+    # (ae-bf-cg-dh, af+be+ch-dg, ag-bh+ce+df, ah+bg-cf+de).
+    left = Quaternion(1, 2, 3, 4)
+    right = Quaternion(5, 6, 7, 8)
+
+    np.testing.assert_array_equal((left * right).data, [[-60, 12, 30, 24]])
+    np.testing.assert_array_equal((right * left).data, [[-60, 20, 14, 32]])
+
+    # The basis units make the multiplication order visible: ij = k, ji = -k.
+    i = Quaternion(0, 1, 0, 0)
+    j = Quaternion(0, 0, 1, 0)
+    k = Quaternion(0, 0, 0, 1)
+    np.testing.assert_array_equal((i * j).data, k.data)
+    np.testing.assert_array_equal((j * i).data, (-k).data)
+
+
+def test_normalization_conjugation_and_unit_inverse():
+    # norm(1, 2, 2, 4) = 5; conjugation negates the vector part.
+    q = Quaternion(1, 2, 2, 4)
+    unit = Quaternion(0.2, 0.4, 0.4, 0.8)
+    np.testing.assert_allclose(q.norm().data, unit.data, rtol=0, atol=1e-15)
+    np.testing.assert_array_equal(q.conjugate().data, [[1, -2, -2, -4]])
+
+    # A unit quaternion's inverse is its conjugate, and their product is 1.
+    unit_q = Quaternion(0.5, 0.5, 0.5, 0.5)
+    inverse = Quaternion(0.5, -0.5, -0.5, -0.5)
+    np.testing.assert_array_equal(unit_q.inverse().data, inverse.data)
+    np.testing.assert_array_equal((unit_q * unit_q.inverse()).data, [[1, 0, 0, 0]])
+
+
 @requires_numpy_quaternion
 def test_mul():
     q1 = Quaternion(np.random.random((2, 4))).norm()
