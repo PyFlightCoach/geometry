@@ -65,8 +65,8 @@ class Transformation(Base):
             ],axis=1))
         elif len(p) == 1 and len(q) > 1:
             return Transformation.build(p.tile(len(q)), q)
-        elif len(p) > 1 and len(q) >= 1:
-            return Transformation.build(q.tile(len(p)))
+        elif len(p) > 1 and len(q) == 1:
+            return Transformation.build(p, q.tile(len(p)))
         else:
             raise ValueError("incompatible lengths")
 
@@ -135,7 +135,7 @@ class Transformation(Base):
 
 
     def to_matrix(self):
-        outarr = np.identity(4).reshape(1,4,4)
+        outarr = np.tile(np.identity(4), (len(self), 1, 1))
         outarr[:, :3,:3] = self.rotation.to_rotation_matrix()
         outarr[:, 3,:3] = self.translation.data
         return outarr

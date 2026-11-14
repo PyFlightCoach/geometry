@@ -81,7 +81,7 @@ class Time(Base):
             np.pad(newdt, (0, 1), constant_values=0),
         )
 
-    def linterp_recaclulate_dt(
+    def linterp_recalculate_dt(
         self,
         index: float | npt.NDArray | None = None,
         extrapolate: Literal["throw", "nearest"] = "throw",
@@ -100,6 +100,9 @@ class Time(Base):
 #            return Time(new_t, new_dt)
 
         return dolinterp
+
+    # Preserve the original public spelling for existing callers.
+    linterp_recaclulate_dt = linterp_recalculate_dt
 
     def __add__(self, t: float):
         return Time(self.t + t, self.dt)
