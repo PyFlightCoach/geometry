@@ -157,3 +157,18 @@ def test_univariate_spline():
     assert isinstance(splinepoints, Point)
     assert len(splinepoints) == 100
 
+
+
+def test_smoothing_spline_low_rate_auto_s():
+    # ~10 Hz data: the default auto_s cutoff would otherwise exceed Nyquist
+    t = np.arange(0, 20, 0.1)
+    clean = np.stack([np.sin(0.3 * t), np.cos(0.2 * t), 0.1 * t], axis=1)
+    noisy = clean + np.random.default_rng(1).normal(0, 0.03, clean.shape)
+
+    spline = Point(noisy).smoothing_spline(t, auto_s=True)
+
+    fitted = spline(t)
+    assert isinstance(fitted, Point)
+    assert np.all(np.isfinite(fitted.data))
+    assert np.max(np.abs(fitted.data - clean)) < 0.2
+    assert np.all(np.isfinite(spline(t, 1).data))

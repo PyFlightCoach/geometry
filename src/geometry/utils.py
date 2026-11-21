@@ -169,11 +169,19 @@ def make_smoothing_spline(data: npt.ArrayLike, index: npt.ArrayLike = None, auto
         # using a high pass filter to isolate the noise variance:
         #Schulze, H. G., et al. (2011). Denoising of spectra with no user input: a spline‐smoothing approach. Journal of Raman Spectroscopy, 42(8), 1630-1638.
         
+        fs = 1 / np.median(np.diff(index))
+
+        # The cutoff must lie below Nyquist (fs / 2) or butter raises. For low
+        # rate data (about 20 Hz or less) the default cutoff is at or above
+        # Nyquist, so clamp it to 80% of Nyquist. Unchanged for cutoffs already
+        # below that.
+        cutoff = min(auto_s_cutoff_freq, 0.8 * fs / 2)
+
         sos = butter(
             N=4,
-            Wn=auto_s_cutoff_freq,
+            Wn=cutoff,
             btype="highpass",
-            fs=1 / np.median(np.diff(index)),
+            fs=fs,
             output="sos",
         )
     
